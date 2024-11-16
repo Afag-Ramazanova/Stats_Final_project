@@ -61,17 +61,16 @@ Do different regions have an effect on the factors that correlates with a person
 **Load the data and provide a `glimpse()`**:
 
 ```{r data-1, warning=FALSE}
-# Load libraries
 library(tidyverse)
-library(readxl)
 
-# Load dataset
 data <- read.csv("data/dataset_2.csv")
 
-# Examine structure
-str(data)
-summary(data)
+set.seed(123)  
+data_subset <- data %>% sample_n(1000)
 
+summary(data_subset)
+glimpse(data_subset)
+ 
 
 
 ```
@@ -81,33 +80,26 @@ summary(data)
 **Exploratory Plots:**
 
 ```{r plots-1}
-# Analyze religiosity
-religiosity_vars <- data %>% 
+religiosity_vars <- data_subset %>% 
   select(QCURREL, Q9, Q10, Q28)
 
-# Plot religiosity importance
-ggplot(data, aes(x = factor(Q9, labels = c("Very", "Somewhat", "Not Very", "Not at all","Don’t know","Refused")))) +
+ggplot(data_subset, aes(x = factor(Q9, labels = c("Very", "Somewhat", "Not Very", "Not at all","Don’t know","Refused")))) +
   geom_bar() +
   labs(title = "Importance of Religion", x = "Level", y = "Count")
 
-# Correlation with other factors
-cor(data$QAGE, data$Q9, use = "complete.obs")
+cor(data_subset$QAGE, data$Q9, use = "complete.obs")
 
-# Regional analysis
-data %>%
+data_subset %>%
   group_by(VietnamRegion) %>%
   summarize(mean_religion_importance = mean(Q9, na.rm = TRUE)) %>%
   ggplot(aes(x = VietnamRegion, y = mean_religion_importance)) +
   geom_bar(stat = "identity") +
   labs(title = "Religiosity by Region", x = "Region", y = "Mean Importance")
 
-# Statistical tests
-chisq.test(table(data$Q9, data$VietnamRegion))
+chisq.test(table(data_subset$Q9, data_subset$VietnamRegion))
 
 
-# Assuming `data` contains the dataset
-# Recode Q9 (Importance of Religion)
-data <- data %>%
+data_subset <- data_subset %>%
   mutate(
     religion_importance = factor(Q9, 
                                  levels = c(1, 2, 3, 4), 
@@ -117,8 +109,7 @@ data <- data %>%
                               labels = c("Prioritize Expression", "Prioritize Harmony", "Other/Depends"))
   )
 
-# Plot: Stacked bar chart to show relationship
-ggplot(data, aes(x = religion_importance, fill = harmony_priority)) +
+ggplot(data_subset, aes(x = religion_importance, fill = harmony_priority)) +
   geom_bar(position = "fill") +
   scale_y_continuous(labels = scales::percent_format()) +
   labs(
@@ -130,6 +121,67 @@ ggplot(data, aes(x = religion_importance, fill = harmony_priority)) +
   theme_minimal()
 
 ```
+
+
+
+
+```{r}
+library(tidyverse)
+library(scales)  
+
+set.seed(123)  
+data_subset <- data %>% sample_n(1000)
+
+# Bar Plot: Importance of Religion
+ggplot(data_subset, aes(x = factor(Q9, 
+                                   levels = c(1, 2, 3, 4, 98, 99), 
+                                   labels = c("Very", "Somewhat", "Not Very", "Not at all", "Don’t know", "Refused")))) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Importance of Religion", x = "Level", y = "Count") +
+  theme_minimal()
+
+# Correlation Between Age and Importance of Religion
+correlation <- cor(data_subset$QAGE, as.numeric(data_subset$Q9), use = "complete.obs")
+print(paste("Correlation between Age and Religion Importance:", correlation))
+
+# Bar Plot: Religiosity by Region
+data_subset %>%
+  group_by(VietnamRegion) %>%
+  summarize(mean_religion_importance = mean(as.numeric(Q9), na.rm = TRUE)) %>%
+  ggplot(aes(x = VietnamRegion, y = mean_religion_importance)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Religiosity by Region", x = "Region", y = "Mean Importance") +
+  theme_minimal()
+
+# Chi-Square Test: Religion Importance and Region
+chisq_result <- chisq.test(table(data_subset$Q9, data_subset$VietnamRegion))
+print("Chi-Square Test Results:")
+print(chisq_result)
+
+# Relationship Between Religion Importance and Harmony Priority
+data_subset <- data_subset %>%
+  mutate(
+    religion_importance = factor(Q9, 
+                                 levels = c(1, 2, 3, 4, 98, 99), 
+                                 labels = c("Very important", "Somewhat important", "Not very important", "Not at all important", "Don’t know", "Refused")),
+    harmony_priority = factor(Q36, 
+                              levels = c(1, 2, 3), 
+                              labels = c("Prioritize Expression", "Prioritize Harmony", "Other/Depends"))
+  )
+
+ggplot(data_subset, aes(x = religion_importance, fill = harmony_priority)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = percent_format()) +
+  labs(
+    title = "Relationship Between Religion Importance and Harmony Priority",
+    x = "Importance of Religion",
+    y = "Proportion",
+    fill = "Priority"
+  ) +
+  theme_minimal()
+
+```
+
 
 # 
 
