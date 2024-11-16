@@ -61,6 +61,18 @@ Do different regions have an effect on the factors that correlates with a person
 **Load the data and provide a `glimpse()`**:
 
 ```{r data-1, warning=FALSE}
+# Load libraries
+library(tidyverse)
+library(readxl)
+
+# Load dataset
+data <- read.csv("data/dataset_2.csv")
+
+# Examine structure
+str(data)
+summary(data)
+
+
 
 ```
 
@@ -69,6 +81,53 @@ Do different regions have an effect on the factors that correlates with a person
 **Exploratory Plots:**
 
 ```{r plots-1}
+# Analyze religiosity
+religiosity_vars <- data %>% 
+  select(QCURREL, Q9, Q10, Q28)
+
+# Plot religiosity importance
+ggplot(data, aes(x = factor(Q9, labels = c("Very", "Somewhat", "Not Very", "Not at all","Don’t know","Refused")))) +
+  geom_bar() +
+  labs(title = "Importance of Religion", x = "Level", y = "Count")
+
+# Correlation with other factors
+cor(data$QAGE, data$Q9, use = "complete.obs")
+
+# Regional analysis
+data %>%
+  group_by(VietnamRegion) %>%
+  summarize(mean_religion_importance = mean(Q9, na.rm = TRUE)) %>%
+  ggplot(aes(x = VietnamRegion, y = mean_religion_importance)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Religiosity by Region", x = "Region", y = "Mean Importance")
+
+# Statistical tests
+chisq.test(table(data$Q9, data$VietnamRegion))
+
+
+# Assuming `data` contains the dataset
+# Recode Q9 (Importance of Religion)
+data <- data %>%
+  mutate(
+    religion_importance = factor(Q9, 
+                                 levels = c(1, 2, 3, 4), 
+                                 labels = c("Very important", "Somewhat important", "Not very important", "Not at all important")),
+    harmony_priority = factor(Q36, 
+                              levels = c(1, 2, 3), 
+                              labels = c("Prioritize Expression", "Prioritize Harmony", "Other/Depends"))
+  )
+
+# Plot: Stacked bar chart to show relationship
+ggplot(data, aes(x = religion_importance, fill = harmony_priority)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    title = "Relationship between Religion Importance and Harmony Priority",
+    x = "Importance of Religion",
+    y = "Proportion",
+    fill = "Priority"
+  ) +
+  theme_minimal()
 
 ```
 
