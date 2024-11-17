@@ -37,8 +37,67 @@ This dataset includes details on police killings in the United States, with vari
 **Load the data and provide a `glimpse()`**:
 
 ```{r data-1, warning=FALSE}
+glimpse(new_data)
+
+
+####### Research question 1
+## 1. Race/Ethnicity
+race_counts <- table(new_data$raceethnicity)
+race_percentages <- prop.table(race_counts) * 100
+
+cat("Race/Ethnicity Distribution:\n")
+print(race_counts)
+cat("\nPercentages:\n")
+print(race_percentages)
+
+plot1 <- ggplot(new_data, aes(x = raceethnicity)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Distribution of Race/Ethnicity", x = "Race/Ethnicity", y = "Count")
+
+# Plot 1: Relationship between 'race' and 'poverty rate'
+plot2 <- ggplot(new_data, aes(x = raceethnicity, y = pov)) +
+  geom_boxplot(fill = "lightgreen", outlier.colour = "red", outlier.shape = 1) +
+  geom_jitter(width = 0.2, alpha = 0.2) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Relationship between Race/Ethnicity and Poverty Rate",
+       x = "Race/Ethnicity",
+       y = "Poverty Rate")
+
+#### Research question 2
+
+## 6. Armed Status
+armed_counts <- table(new_data$armed)
+armed_percentages <- prop.table(armed_counts) * 100
+
+cat("\nArmed Status Distribution:\n")
+print(armed_counts)
+cat("\nPercentages:\n")
+print(armed_percentages)
+
+plot3 <- ggplot(new_data, aes(x = armed)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Distribution of Armed Status", x = "Armed Status", y = "Count")
+
+# Plot 2: Relationship between 'armed' and 'age'
+plot4 <- ggplot(new_data, aes(x = armed, y = age)) +
+  geom_boxplot(fill = "lightblue", outlier.colour = "red", outlier.shape = 1) +
+  geom_jitter(width = 0.2, alpha = 0.2) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Relationship between Armed Status and Age",
+       x = "Armed Status",
+       y = "Age")
+
+library(cowplot)
+plot_grid(plot1, plot2, plot3, plot4, ncol=2)
 
 ```
+
+There are mostly black and white in race/ethnicity in police killings. We can see that the average poverty rate is lower in white compared to black. Moreover, we can observe that there are many people armed with firearm and the range of the age of the deceased is wide from less than 30 to 90.
+
 
 # Dataset 2 
 
