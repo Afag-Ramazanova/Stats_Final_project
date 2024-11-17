@@ -60,15 +60,20 @@ print(race_counts)
 cat("\nPercentages:\n")
 print(race_percentages)
 
-ggplot(new_data, aes(x = raceethnicity)) +
+plot1 <- ggplot(new_data, aes(x = raceethnicity)) +
   geom_bar() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "Distribution of Race/Ethnicity", x = "Race/Ethnicity", y = "Count")
 
-## 2. Comparative Income (comp_income)
-ggplot(new_data, aes(x = comp_income, y = raceethnicity)) +
-  geom_point() +
-  labs(title = "Comparative Income vs. race", x = "Comparative Income", y = "Race/Ethnicity")
+# Plot 1: Relationship between 'race' and 'poverty rate'
+plot2 <- ggplot(new_data, aes(x = raceethnicity, y = pov)) +
+  geom_boxplot(fill = "lightgreen", outlier.colour = "red", outlier.shape = 1) +
+  geom_jitter(width = 0.2, alpha = 0.2) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Relationship between Race/Ethnicity and Poverty Rate",
+       x = "Race/Ethnicity",
+       y = "Poverty Rate")
 
 #### Research question 2
 
@@ -81,29 +86,24 @@ print(armed_counts)
 cat("\nPercentages:\n")
 print(armed_percentages)
 
-ggplot(new_data, aes(x = armed)) +
+plot3 <- ggplot(new_data, aes(x = armed)) +
   geom_bar() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "Distribution of Armed Status", x = "Armed Status", y = "Count")
 
-## 4. Age
-ggplot(new_data, aes(x = age, y = armed)) +
-  geom_point() +
-  labs(title = "Distribution of Age", x = "Age", y = "Count")
+# Plot 2: Relationship between 'armed' and 'age'
+plot4 <- ggplot(new_data, aes(x = armed, y = age)) +
+  geom_boxplot(fill = "lightblue", outlier.colour = "red", outlier.shape = 1) +
+  geom_jitter(width = 0.2, alpha = 0.2) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Relationship between Armed Status and Age",
+       x = "Armed Status",
+       y = "Age")
 
-## Correlation matrix for numerical variables
-numerical_vars <- new_data[, c("comp_income", "pov", "age", "urate")]
-cor_matrix <- cor(numerical_vars, use="complete.obs")
+library(cowplot)
+plot_grid(plot1, plot2, plot3, plot4, ncol=2)
 
-library(corrplot)
-corrplot(cor_matrix, 
-         method = "color",
-         type = "upper",
-         order = "hclust",
-         addCoef.col = "black",
-         tl.col = "black",
-         tl.srt = 45,
-         diag = FALSE)
 ```
 
-There are mostly black and white in race/ethnicity in police killings. The rest distributions are right skewed. From the correlation plot, we observe that the poverty rate is highly correlated to comparative income. We would want to drop one in our research analysis.
+There are mostly black and white in race/ethnicity in police killings. We can see that the average poverty rate is lower in white compared to black. Moreover, we can observe that there are many people armed with firearm and the range of the age of the deceased is wide from less than 30 to 90.
