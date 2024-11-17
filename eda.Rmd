@@ -1,0 +1,109 @@
+---
+title: "eda"
+author: "Eleanor Jiang 305002785"
+date: "2024-11-17"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## EDA
+
+
+```{r basic EDA, echo=FALSE}
+library(dplyr)
+library(ggplot2)
+
+# Read the new CSV file
+new_data <- read.csv("police_killings_processed.csv")
+
+## Examine NAs
+print(sapply(new_data, function(x) sum(is.na(x))))
+
+## Convert age to numeric
+
+# Convert the 'age' column to numeric
+new_data$age_num <- as.numeric(new_data$age)
+
+# Verify the conversion
+class(new_data$age_num)
+
+# Check for any NAs introduced during conversion
+sum(is.na(new_data$age_num))
+
+# Check the original data
+# print(new_data[is.na(new_data$age_num), c("age", "age_num")])
+
+# Convert "Unknown" age to mean age
+new_data$age <- as.numeric(ifelse(new_data$age == "unknown", NA, new_data$age))
+new_data$age[is.na(new_data$age)] <- mean(new_data$age, na.rm = TRUE)
+```
+
+The indicator `age` contains missing values "Unknown". We choose to fill them with the average value.
+
+
+```{r}
+glimpse(new_data)
+
+
+####### Research question 1
+## 1. Race/Ethnicity
+race_counts <- table(new_data$raceethnicity)
+race_percentages <- prop.table(race_counts) * 100
+
+cat("Race/Ethnicity Distribution:\n")
+print(race_counts)
+cat("\nPercentages:\n")
+print(race_percentages)
+
+ggplot(new_data, aes(x = raceethnicity)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Distribution of Race/Ethnicity", x = "Race/Ethnicity", y = "Count")
+
+## 2. Comparative Income (comp_income)
+ggplot(new_data, aes(x = comp_income, y = raceethnicity)) +
+  geom_point() +
+  labs(title = "Comparative Income vs. race", x = "Comparative Income", y = "Race/Ethnicity")
+
+#### Research question 2
+
+## 6. Armed Status
+armed_counts <- table(new_data$armed)
+armed_percentages <- prop.table(armed_counts) * 100
+
+cat("\nArmed Status Distribution:\n")
+print(armed_counts)
+cat("\nPercentages:\n")
+print(armed_percentages)
+
+ggplot(new_data, aes(x = armed)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Distribution of Armed Status", x = "Armed Status", y = "Count")
+
+## 4. Age
+ggplot(new_data, aes(x = age, y = armed)) +
+  geom_point() +
+  labs(title = "Distribution of Age", x = "Age", y = "Count")
+
+## Correlation matrix for numerical variables
+numerical_vars <- new_data[, c("comp_income", "pov", "age", "urate")]
+cor_matrix <- cor(numerical_vars, use="complete.obs")
+
+library(corrplot)
+corrplot(cor_matrix, 
+         method = "color",
+         type = "upper",
+         order = "hclust",
+         addCoef.col = "black",
+         tl.col = "black",
+         tl.srt = 45,
+         diag = FALSE)
+```
+
+There are mostly black and white in race/ethnicity in police killings. The rest distributions are right skewed. From the correlation plot, we observe that the poverty rate is highly correlated to comparative income. We would want to drop one in our research analysis.
