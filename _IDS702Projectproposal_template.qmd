@@ -12,27 +12,21 @@ library(tidyverse)
 ```
 
 # Dataset 1 (top choice)
-Police Killing Dataset
-**Data source:**
-https://github.com/fivethirtyeight/data/tree/master/police-killings
-**Brief description:**
-This dataset includes details on police killings in the United States, with variables such as location, race, gender, age, and circumstances of each incident.
-**Research question 1: Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?**
 
-- Outcome variable: race ethnicity (Nominal) – categorizes the racial/ethnic group of the deceased.
-- Independent Variables:
-    - _compincome_ : A measure of relative income (household income divided by county income) which indicates economic status.
-    - _pov_ : Poverty level in the area, providing additional context on socio-economic conditions.
+Police Killing Dataset **Data source:** https://github.com/fivethirtyeight/data/tree/master/police-killings **Brief description:** This dataset includes details on police killings in the United States, with variables such as location, race, gender, age, and circumstances of each incident. **Research question 1: Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?**
 
+-   Outcome variable: race ethnicity (Nominal) – categorizes the racial/ethnic group of the deceased.
+-   Independent Variables:
+    -   *compincome* : A measure of relative income (household income divided by county income) which indicates economic status.
+    -   *pov* : Poverty level in the area, providing additional context on socio-economic conditions.
 
 **Research question 2: Does the likelihood of an individual being armed in a police-related incident vary based on age and unemployment rate in the area?**
 
-- Outcome variable: armed (Binary) – indicates whether the deceased was armed at the time of the incident.
-- Independent Variables:
-    - _age_: Age of the deceased (continuous variable).
-    - _urate_: Unemployment rate in the area, which could represent socio-economic stress.
-- Interaction Term: An interaction between age and urate to see if age and local unemployment influence the likelihood of individuals being armed.
-
+-   Outcome variable: armed (Binary) – indicates whether the deceased was armed at the time of the incident.
+-   Independent Variables:
+    -   *age*: Age of the deceased (continuous variable).
+    -   *urate*: Unemployment rate in the area, which could represent socio-economic stress.
+-   Interaction Term: An interaction between age and urate to see if age and local unemployment influence the likelihood of individuals being armed.
 
 **Load the data and provide a `glimpse()`**:
 
@@ -98,8 +92,7 @@ plot_grid(plot1, plot2, plot3, plot4, ncol=2)
 
 There are mostly black and white in race/ethnicity in police killings. We can see that the average poverty rate is lower in white compared to black. Moreover, we can observe that there are many people armed with firearm and the range of the age of the deceased is wide from less than 30 to 90.
 
-
-# Dataset 2 
+# Dataset 2
 
 **Data source:** Pew Research East Asian Religion
 
@@ -107,15 +100,16 @@ There are mostly black and white in race/ethnicity in police killings. We can se
 
 **Research question 1:**
 
-What variables are associated with being religious
+What variables are associated with being religious?
 
--   Outcome variable: IsReligious, binary variable, specifies if the respondent is religious
+-   Outcome variable: Religion importance - Q9. Ordinal categorical variable, the lower it is the more important religion is to the survey taker. 
 
 **Research question 2:**
 
 Do different regions have an effect on the factors that correlates with a person's bent on religion?
 
 -   Outcome variable (include the name/description and type of variable):
+Religion importance - Q9. Ordinal categorical variable, the lower it is the more important religion is to the survey taker. 
 
 **Load the data and provide a `glimpse()`**:
 
@@ -124,72 +118,19 @@ library(tidyverse)
 
 data <- read.csv("data/dataset_2.csv")
 
-set.seed(123)  
-data_subset <- data %>% sample_n(1000)
+set.seed(12)  
+data_subset <- data %>% sample_n(500) %>% filter(Q9 < 5)
 
 summary(data_subset)
 glimpse(data_subset)
- 
-
-
 ```
-
-
 
 **Exploratory Plots:**
-
-```{r plots-1}
-religiosity_vars <- data_subset %>% 
-  select(QCURREL, Q9, Q10, Q28)
-
-ggplot(data_subset, aes(x = factor(Q9, labels = c("Very", "Somewhat", "Not Very", "Not at all","Don’t know","Refused")))) +
-  geom_bar() +
-  labs(title = "Importance of Religion", x = "Level", y = "Count")
-
-cor(data_subset$QAGE, data$Q9, use = "complete.obs")
-
-data_subset %>%
-  group_by(VietnamRegion) %>%
-  summarize(mean_religion_importance = mean(Q9, na.rm = TRUE)) %>%
-  ggplot(aes(x = VietnamRegion, y = mean_religion_importance)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Religiosity by Region", x = "Region", y = "Mean Importance")
-
-chisq.test(table(data_subset$Q9, data_subset$VietnamRegion))
-
-
-data_subset <- data_subset %>%
-  mutate(
-    religion_importance = factor(Q9, 
-                                 levels = c(1, 2, 3, 4), 
-                                 labels = c("Very important", "Somewhat important", "Not very important", "Not at all important")),
-    harmony_priority = factor(Q36, 
-                              levels = c(1, 2, 3), 
-                              labels = c("Prioritize Expression", "Prioritize Harmony", "Other/Depends"))
-  )
-
-ggplot(data_subset, aes(x = religion_importance, fill = harmony_priority)) +
-  geom_bar(position = "fill") +
-  scale_y_continuous(labels = scales::percent_format()) +
-  labs(
-    title = "Relationship between Religion Importance and Harmony Priority",
-    x = "Importance of Religion",
-    y = "Proportion",
-    fill = "Priority"
-  ) +
-  theme_minimal()
-
-```
-
-
-
 
 ```{r}
 library(tidyverse)
 library(scales)  
 
-set.seed(123)  
-data_subset <- data %>% sample_n(1000)
 
 # Bar Plot: Importance of Religion
 ggplot(data_subset, aes(x = factor(Q9, 
@@ -241,19 +182,20 @@ ggplot(data_subset, aes(x = religion_importance, fill = harmony_priority)) +
 
 ```
 
-
 # 
 
 # Team Charter
 
 #### When will you meet as a team to work on the project components? Will these meetings be held in person or virtually?
+
 We will do both as needed, on an ad-hoc basis.
 
 #### What is your group policy on missing team meetings (e.g., how much advance notice should be provided)?
-One day in advance. The person missing the meeting will do more work.
+
+One day in advance. The person missing the meeting will get a slap on the wrist and do more work. :D
 
 #### How will your team communicate (email, Slack, text messages)? What is your policy on appropriate response time (within a certain number of hours? Nights/weekends?)?
-We will communicate via whatsapp, responses should be in the same day.
 
+We will communicate via whatsapp, responses should be in the same day.
 
 #### 
