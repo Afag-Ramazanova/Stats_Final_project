@@ -1,6 +1,6 @@
 ---
 title: "Project Proposal"
-author: "Afag, Peter, Elenor, Moba the Late"
+author: "Afag, Peter, Elenor, Mobasser"
 subtitle: "Due November 17 at 11:59pm"
 format: pdf
 ---
@@ -13,7 +13,13 @@ library(tidyverse)
 
 # Dataset 1 (top choice)
 
-Police Killing Dataset **Data source:** https://github.com/fivethirtyeight/data/tree/master/police-killings **Brief description:** This dataset includes details on police killings in the United States, with variables such as location, race, gender, age, and circumstances of each incident. **Research question 1: Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?**
+Police Killing Dataset 
+
+**Data source:** https://github.com/fivethirtyeight/data/tree/master/police-killings 
+
+**Brief description:** This dataset includes details on police killings in the United States, with variables such as location, race, gender, age, and circumstances of each incident. 
+
+**Research question 1: Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?**
 
 -   Outcome variable: race ethnicity (Nominal) – categorizes the racial/ethnic group of the deceased.
 -   Independent Variables:
@@ -29,9 +35,15 @@ Police Killing Dataset **Data source:** https://github.com/fivethirtyeight/data/
 -   Interaction Term: An interaction between age and urate to see if age and local unemployment influence the likelihood of individuals being armed.
 
 **Load the data and provide a `glimpse()`**:
+```{r data , warning=FALSE}
+
+new_data <-  read.csv("data/police_killings.csv")
+glimpse(new_data)
+```
+
+
 
 ```{r data-1, warning=FALSE}
-glimpse(new_data)
 
 
 ####### Research question 1
