@@ -16,11 +16,11 @@ library(cowplot)
 
 # Dataset 1 (top choice)
 
-Police Killing Dataset 
+Police Killing Dataset
 
-**Data source:** https://github.com/fivethirtyeight/data/tree/master/police-killings 
+**Data source:** https://github.com/fivethirtyeight/data/tree/master/police-killings
 
-**Brief description:** This dataset includes details on police killings in the United States, with variables such as location, race, gender, age, and circumstances of each incident. 
+**Brief description:** This dataset includes details on police killings in the United States, with variables such as location, race, gender, age, and circumstances of each incident.
 
 **Research question 1: Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?**
 
@@ -38,29 +38,90 @@ Police Killing Dataset
 -   Interaction Term: An interaction between age and urate to see if age and local unemployment influence the likelihood of individuals being armed.
 
 **Load the data and provide a `glimpse()`**:
+
 ```{r data , warning=FALSE}
 
-<<<<<<< HEAD
-```{r data-1, warning=FALSE, fig.width=7, fig.height=5}
 new_data <-  read.csv("data/police_killings.csv")
-=======
-new_data <-  read.csv("data/police_killings.csv")
->>>>>>> 7cfff4ba7a63eef18cf740f5cdcd25946b5fe6f0
 glimpse(new_data)
 ```
 
-# Convert "Unknown" age to mean age
+**Convert "Unknown" age to mean age**
+
+```{r data , warning=FALSE}
 new_data$age <- as.numeric(ifelse(new_data$age == "unknown", NA, new_data$age))
 new_data$age[is.na(new_data$age)] <- mean(new_data$age, na.rm = TRUE)
-# convert "-" pov rate to median pov
+```
+
+**convert "-" pov rate to median pov**
+
+```{r data , warning=FALSE}
 new_data$pov <- as.numeric(ifelse(new_data$pov == "-", NA, new_data$pov))
 new_data$pov[is.na(new_data$pov)] <- median(new_data$pov, na.rm = TRUE)
+```
 
+**changing "Unknown" race to mode (White)**
+
+```{r}
+
+new_data$raceethnicity <- ifelse(new_data$raceethnicity == "Unknown", "White", new_data$raceethnicity)
+table(new_data$raceethnicity)
+
+```
+
+**checking for the missing values**
+
+```{r}
+sapply(new_data, function(x) sum(is.na(x)))
+```
+
+**changing types of the "share_white", "share_black", "share_hispanic", "p_income" to numeric**
+
+```{r}
+new_data <- new_data %>%
+  mutate(across(c(share_white, share_black, share_hispanic, p_income), 
+                ~ as.numeric(gsub("[^0-9.]", "", .))))
+```
+
+#### Model fitting
+
+Filling missing values with median and mean
+
+```{r}
+new_data$urate[is.na(new_data$urate)] <- median(new_data$urate, na.rm = TRUE)
+new_data$comp_income[is.na(new_data$comp_income)] <- median(new_data$comp_income, na.rm = TRUE)
+new_data$p_income[is.na(new_data$p_income)] <- median(new_data$p_income, na.rm = TRUE)
+```
+
+```{r}
+library(caret)
+library(foreign)
+library(nnet)
+
+new_data <- new_data |>
+  mutate(raceethnicity = factor(raceethnicity),  
+         raceethnicity = relevel(raceethnicity, ref = "White"))  
+
+multi_race <- multinom(raceethnicity ~ p_income + county_income  + comp_income + urate + pov, data=new_data)
+
+summary(multi_race)
+
+exp(summary(multi_race)$coefficients) 
+```
+
+```{r}
+z <- summary(multi_race)$coefficients/summary(multi_race)$standard.errors
+
+(p <- (1-pnorm(abs(z)))*2)
+```
+
+```{r}
+confusionMatrix(predict(multi_race), new_data$raceethnicity, mode="everything")
+
+```
 
 ```{r data-1, warning=FALSE}
 
-
-####### Research question 1
+###### Research question 1
 ## 1. Race/Ethnicity
 
 plot1 <- ggplot(new_data, aes(x = raceethnicity)) +
@@ -114,14 +175,13 @@ There are mostly black and white in race/ethnicity in police killings. We can se
 
 What variables are associated with being religious?
 
--   Outcome variable: Religion importance - Q9. Ordinal categorical variable, the lower it is the more important religion is to the survey taker. 
+-   Outcome variable: Religion importance - Q9. Ordinal categorical variable, the lower it is the more important religion is to the survey taker.
 
 **Research question 2:**
 
 Do different regions have an effect on the factors that correlates with a person's bent on religion?
 
--   Outcome variable (include the name/description and type of variable):
-Religion importance - Q9. Ordinal categorical variable, the lower it is the more important religion is to the survey taker. 
+-   Outcome variable (include the name/description and type of variable): Religion importance - Q9. Ordinal categorical variable, the lower it is the more important religion is to the survey taker.
 
 **Load the data and provide a `glimpse()`**:
 
@@ -210,4 +270,4 @@ One day in advance. The person missing the meeting will get a slap on the wrist 
 
 We will communicate via whatsapp, responses should be in the same day.
 
-#### 
+####
