@@ -82,9 +82,13 @@ new_data <- new_data %>%
                 ~ as.numeric(gsub("[^0-9.]", "", .))))
 ```
 
-#### Model fitting
+**checking again to see the changes in variables**
 
-Filling missing values with median and mean
+```{r}
+glimpse(new_data)
+```
+
+Filling missing values with median
 
 ```{r}
 new_data$urate[is.na(new_data$urate)] <- median(new_data$urate, na.rm = TRUE)
@@ -92,20 +96,43 @@ new_data$comp_income[is.na(new_data$comp_income)] <- median(new_data$comp_income
 new_data$p_income[is.na(new_data$p_income)] <- median(new_data$p_income, na.rm = TRUE)
 ```
 
+#### Model fitting
+
+```{r}
+selected_data <- new_data %>%
+  select(raceethnicity, p_income, h_income, county_income, pov, urate, 
+         share_white, share_black, share_hispanic)
+library(GGally)
+selected_data_numeric <- selected_data %>%
+  select(-raceethnicity) # Exclude categorical variables
+ggpairs(selected_data_numeric)
+```
+
+High correlation between
+
+-   p-income and h-income.
+
+-   pov and p-income
+
+-   pov and h-income
+
+-   pov and urate
+
 ```{r}
 library(caret)
 library(foreign)
 library(nnet)
 
+# changing the raceethnicity variable to factor and making White as a reference 
 new_data <- new_data |>
   mutate(raceethnicity = factor(raceethnicity),  
          raceethnicity = relevel(raceethnicity, ref = "White"))  
 
-multi_race <- multinom(raceethnicity ~ p_income + county_income  + comp_income + urate + pov, data=new_data)
+multi_race <- multinom(raceethnicity ~ p_income + pop + county_income #+ h_income 
+                       + share_white + share_black + share_hispanic  + comp_income + urate + pov, data=new_data)
 
 summary(multi_race)
 
-exp(summary(multi_race)$coefficients) 
 ```
 
 ```{r}
@@ -117,6 +144,22 @@ z <- summary(multi_race)$coefficients/summary(multi_race)$standard.errors
 ```{r}
 confusionMatrix(predict(multi_race), new_data$raceethnicity, mode="everything")
 
+```
+
+```{r}
+refined_model <- multinom(raceethnicity ~ p_income + #county_income + 
+                           share_white + share_black + share_hispanic + 
+                           comp_income + urate, data = new_data)
+
+
+summary(refined_model)
+
+```
+
+```{r}
+z_refined <- summary(refined_model)$coefficients/summary(refined_model)$standard.errors
+
+(p <- (1-pnorm(abs(z_refined)))*2)
 ```
 
 ```{r data-1, warning=FALSE}
