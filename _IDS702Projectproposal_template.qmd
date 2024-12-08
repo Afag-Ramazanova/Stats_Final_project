@@ -1,6 +1,6 @@
 ---
 title: "Project Proposal"
-author: "Afag, Peter, Elenor, Mobasser"
+author: "Afag, Peter, Elenor, Moba the Late"
 subtitle: "Due November 17 at 11:59pm"
 format: pdf
 ---
@@ -9,20 +9,11 @@ format: pdf
 
 ```{r load-packages, message = FALSE, warning = FALSE}
 library(tidyverse)
-library(dplyr)
-library(ggplot2)
-library(cowplot)
 ```
 
 # Dataset 1 (top choice)
 
-Police Killing Dataset 
-
-**Data source:** https://github.com/fivethirtyeight/data/tree/master/police-killings 
-
-**Brief description:** This dataset includes details on police killings in the United States, with variables such as location, race, gender, age, and circumstances of each incident. 
-
-**Research question 1: Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?**
+Police Killing Dataset **Data source:** https://github.com/fivethirtyeight/data/tree/master/police-killings **Brief description:** This dataset includes details on police killings in the United States, with variables such as location, race, gender, age, and circumstances of each incident. **Research question 1: Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?**
 
 -   Outcome variable: race ethnicity (Nominal) – categorizes the racial/ethnic group of the deceased.
 -   Independent Variables:
@@ -38,30 +29,20 @@ Police Killing Dataset
 -   Interaction Term: An interaction between age and urate to see if age and local unemployment influence the likelihood of individuals being armed.
 
 **Load the data and provide a `glimpse()`**:
-```{r data , warning=FALSE}
-
-<<<<<<< HEAD
-```{r data-1, warning=FALSE, fig.width=7, fig.height=5}
-new_data <-  read.csv("data/police_killings.csv")
-=======
-new_data <-  read.csv("data/police_killings.csv")
->>>>>>> 7cfff4ba7a63eef18cf740f5cdcd25946b5fe6f0
-glimpse(new_data)
-```
-
-# Convert "Unknown" age to mean age
-new_data$age <- as.numeric(ifelse(new_data$age == "unknown", NA, new_data$age))
-new_data$age[is.na(new_data$age)] <- mean(new_data$age, na.rm = TRUE)
-# convert "-" pov rate to median pov
-new_data$pov <- as.numeric(ifelse(new_data$pov == "-", NA, new_data$pov))
-new_data$pov[is.na(new_data$pov)] <- median(new_data$pov, na.rm = TRUE)
-
 
 ```{r data-1, warning=FALSE}
+glimpse(new_data)
 
 
 ####### Research question 1
 ## 1. Race/Ethnicity
+race_counts <- table(new_data$raceethnicity)
+race_percentages <- prop.table(race_counts) * 100
+
+cat("Race/Ethnicity Distribution:\n")
+print(race_counts)
+cat("\nPercentages:\n")
+print(race_percentages)
 
 plot1 <- ggplot(new_data, aes(x = raceethnicity)) +
   geom_bar() +
@@ -73,8 +54,7 @@ plot2 <- ggplot(new_data, aes(x = raceethnicity, y = pov)) +
   geom_boxplot(fill = "lightgreen", outlier.colour = "red", outlier.shape = 1) +
   geom_jitter(width = 0.2, alpha = 0.2) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-        plot.title = element_text(size = 10)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "Relationship between Race/Ethnicity and Poverty Rate",
        x = "Race/Ethnicity",
        y = "Poverty Rate")
@@ -82,6 +62,13 @@ plot2 <- ggplot(new_data, aes(x = raceethnicity, y = pov)) +
 #### Research question 2
 
 ## 6. Armed Status
+armed_counts <- table(new_data$armed)
+armed_percentages <- prop.table(armed_counts) * 100
+
+cat("\nArmed Status Distribution:\n")
+print(armed_counts)
+cat("\nPercentages:\n")
+print(armed_percentages)
 
 plot3 <- ggplot(new_data, aes(x = armed)) +
   geom_bar() +
@@ -93,13 +80,14 @@ plot4 <- ggplot(new_data, aes(x = armed, y = age)) +
   geom_boxplot(fill = "lightblue", outlier.colour = "red", outlier.shape = 1) +
   geom_jitter(width = 0.2, alpha = 0.2) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.title = element_text(size = 10)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "Relationship between Armed Status and Age",
        x = "Armed Status",
        y = "Age")
 
+library(cowplot)
 plot_grid(plot1, plot2, plot3, plot4, ncol=2)
+
 ```
 
 There are mostly black and white in race/ethnicity in police killings. We can see that the average poverty rate is lower in white compared to black. Moreover, we can observe that there are many people armed with firearm and the range of the age of the deceased is wide from less than 30 to 90.
