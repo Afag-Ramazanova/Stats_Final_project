@@ -125,7 +125,7 @@ The poverty rate shows a statistically significant positive association with the
 
 These findings suggest that economic conditions, particularly poverty and comparative income, play an important role in understanding racial disparities in police-related incidents. While the evidence is strongest for Black individuals, trends observed for other racial groups highlight the need for further investigation into how economic inequities contribute to disparities in police-related outcomes.
 
-```{r rq1-model}
+```{r rq1-model, include=FALSE}
 # Multinomial logistic regression
 rq1_model <- nnet::multinom(
   raceethnicity ~ comp_income + pov,
@@ -134,7 +134,7 @@ rq1_model <- nnet::multinom(
 
 ```
 
-```{r confusion-matrix}
+```{r confusion-matrix, include=FALSE}
 confusionMatrix(predict(rq1_model), cleaned_data$raceethnicity, mode="everything")
 ```
 
@@ -227,7 +227,7 @@ abline(h = 4/(nrow(cleaned_data) - length(rq2_model$coefficients)), col = "red",
 par(mfrow = c(1, 1)) # Reset plotting area
 ```
 
-```{r resutlss}
+```{r resutlss, include=FALSE}
 rq2_model_pred <- ifelse(predict(rq2_model, type="response")>0.5,1,0)
 rq2_model_pred_fac <- factor(rq2_model_pred,
                             levels=c(0,1),
