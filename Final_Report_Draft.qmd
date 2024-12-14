@@ -25,12 +25,17 @@ This report investigates two key research questions about police-related inciden
 
 ## Introduction
 
-Police-related incidents are a critical area of public safety research. This report examines two research questions:
+Police-related incidents have become a focal point of public safety research and policy discussions in recent years. The complex interplay between socioeconomic factors, racial dynamics, and law enforcement practices has sparked intense debate and calls for reform across the United States. Understanding the underlying patterns and potential contributing factors to these incidents is crucial for developing effective strategies to enhance community safety and promote equitable policing practices.
 
-1.  Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?
-2.  Does the likelihood of an individual being armed during such incidents vary based on their age and the unemployment rate in their area?
+Research has shown that economic conditions and racial demographics can significantly influence crime rates and police-community interactions. Studies have found that neighborhoods with higher concentrations of low-income residents and residents of color tend to experience higher rates of police-related deaths[1]. Additionally, unemployment and economic stress have been associated with increased rates of certain types of crime, potentially affecting police encounters[4]. However, the relationship between economic factors and crime is complex, with some research suggesting that economic downturns may actually decrease criminal opportunities in certain contexts[3].
 
-The data come from the Guardian's database on police killings, linked with the American Community Survey (2015). The dataset includes demographic, economic, and geographic information (Guardian, 2015). Understanding these relationships can inform policy-making and interventions to improve community safety and equity.
+This report aims to contribute to this body of knowledge by examining two key research questions:
+
+1. Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?
+
+2. Does the likelihood of an individual being armed during such incidents vary based on their age and the unemployment rate in their area?
+
+By analyzing data from the Guardian's database on police killings, linked with the American Community Survey (2015), this study seeks to provide insights into these critical questions (Guardian, 2015). The dataset, which includes demographic, economic, and geographic information, offers a unique opportunity to explore the potential relationships between socioeconomic factors and the characteristics of police-related incidents. Understanding these dynamics can inform evidence-based policy-making and interventions aimed at improving community safety and promoting equity in law enforcement practices.
 
 ## Methods
 

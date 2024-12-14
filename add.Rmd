@@ -113,3 +113,51 @@ ggplot(cor_melted, aes(x = Var1, y = Var2, fill = value)) +
   )
 ```
 Due to sample size limitations, the racial composition analysis was restricted to three main groups: White (52%), Black, and Hispanic/Latino, with Asian and Native American groups (each <5%) with less than 30 people being excluded from the analysis. For our **research question 1**, it is clear that a multinomial logistic regression is proficient in this case. The box plot reveals distinct income disparities across racial groups, suggesting relative income as a potentially significant predictor. Analysis of economic indicators showed high correlations among most variables, with tract-level unemployment rate being the exception. Based on this correlation analysis, we selected unemployment rate and one additional economic indicator for the final model.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(nnet)
+library(pander)
+
+# Data preprocessing
+rq1_data$raceethnicity <- droplevels(rq1_data$raceethnicity[
+  !rq1_data$raceethnicity %in% c("Asian/Pacific Islander", "Native American")
+])
+
+# Model fitting
+rq1_model <- multinom(
+  raceethnicity ~ comp_income + urate + college + pop + age + share_black*pov,
+  data = rq1_data
+)
+
+# Model summary and statistics
+summary_model <- summary(rq1_model)
+coef <- summary_model$coefficients
+se <- summary_model$standard.errors
+z_scores <- coef / se
+p_values <- 2 * (1 - pnorm(abs(z_scores)))
+
+summary_table <- data.frame(
+  Estimate = as.vector(coef),
+  `Std.Error` = as.vector(se),
+  `z value` = as.vector(z_scores),
+  `Pr(>|z|)` = as.vector(p_values)
+) 
+
+# Display using pander
+library(pander)
+pander(summary_table)
+
+
+# Model accuracy
+predicted_classes <- predict(rq1_model, rq1_data)
+accuracy <- mean(predicted_classes == rq1_data$raceethnicity)
+cat("Model Accuracy:", round(accuracy, 4), "\n")
+
+# AIC comparison
+null_model <- multinom(raceethnicity ~ 1, data = rq1_data)
+cat("Null Model AIC:", null_model$AIC, "\n")
+cat("Full Model AIC:", rq1_model$AIC, "\n")
+
+```
+
+The difference in AIC between the null model and rq1_model is:855.5302 - 686.1731 = 169.3571. This substantial reduction in AIC (169.36 points) indicates that rq1_model provides a much better fit compared to the null model, as lower AIC values suggest better model fit. A difference greater than 10 points is typically considered strong evidence for the superior model. The model also has an accuracy of 0.7, indicating a fair performance of inference of our outcome variable.
