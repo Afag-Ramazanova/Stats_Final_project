@@ -17,6 +17,7 @@ library(knitr)
 library(pander)
 knitr::opts_chunk$set(echo = FALSE)
 ```
+
 ## Results: Economic Conditions and Racial Composition
 
 ## Abstract
@@ -56,6 +57,7 @@ cleaned_data <- data %>%
 # Display summary of cleaned data
 glimpse(cleaned_data)
 ```
+
 ### Data
 
 We used the "police_killings.csv" dataset, which includes variables such as age, racial composition, economic indicators, and whether the individual was armed. Data cleaning involved: - Filtering out missing values for relevant variables (removed `r nrow(data) - nrow(cleaned_data)` rows). - Converting "armed" into a binary factor (armed vs. unarmed) and racial categories into nominal factors. - Ensuring numeric data types for continuous variables like age, `urate`, `comp_income`, and `pov`.
@@ -115,8 +117,6 @@ hist(cleaned_data$age, breaks = 20, main = "Age Distribution", xlab = "Age")
 hist(cleaned_data$urate, breaks = 20, main = "Unemployment Rate Distribution", xlab = "Unemployment Rate")
 ```
 
-
-
 ### Research Question 1: Economic Conditions and Racial Composition
 
 ```{r rq1-model}
@@ -149,9 +149,7 @@ kable(pov_table, caption = "Poverty Level Statistics")
 
 ```
 
-Key findings:
-- **comp_income**: [Summarize insights about relative income and racial composition.]
-- **Poverty**: [Summarize insights about poverty levels and racial composition.]
+Key findings: - **comp_income**: \[Summarize insights about relative income and racial composition.\] - **Poverty**: \[Summarize insights about poverty levels and racial composition.\]
 
 ### Research Question 2: Likelihood of Being Armed
 
@@ -165,11 +163,7 @@ rq2_model <- glm(
 pander(summary(rq2_model))
 ```
 
-Key findings:
-- **Age**: The results indicate no statistically significant relationship between age and the likelihood of being armed (p = 0.7794), suggesting age alone does not have a direct impact.
-- **Unemployment Rate**: The unemployment rate shows a positive relationship with being armed, though not statistically significant (p = 0.2748). Higher unemployment rates may still contribute to increased stress and social dynamics affecting armed status.
-- **Interaction Effect**: The interaction between age and unemployment rate is not statistically significant (p = 0.3639). However, visualizations show nuanced patterns that suggest potential context-specific effects on armed status.
-### Figures
+Key findings: - **Age**: The results indicate no statistically significant relationship between age and the likelihood of being armed (p = 0.7794), suggesting age alone does not have a direct impact. - **Unemployment Rate**: The unemployment rate shows a positive relationship with being armed, though not statistically significant (p = 0.2748). Higher unemployment rates may still contribute to increased stress and social dynamics affecting armed status. - **Interaction Effect**: The interaction between age and unemployment rate is not statistically significant (p = 0.3639). However, visualizations show nuanced patterns that suggest potential context-specific effects on armed status. \### Figures
 
 #### Economic Conditions and Racial Composition
 
@@ -237,7 +231,6 @@ ggplot(cleaned_data, aes(x = urate, fill = armed)) +
 
 ## Conclusion
 
-The analysis reveals that economic conditions significantly correlate with the racial composition of individuals involved in police-related incidents. Additionally, the interaction between age and unemployment rate significantly predicts the likelihood of being armed. These findings underscore the importance of considering socio-economic and demographic factors in public safety policies. Limitations of this study include [limitations]. Future work could explore [suggestions for future research].
+The analysis reveals that economic conditions significantly correlate with the racial composition of individuals involved in police-related incidents. Additionally, the interaction between age and unemployment rate significantly predicts the likelihood of being armed. These findings underscore the importance of considering socio-economic and demographic factors in public safety policies. Limitations of this study include \[limitations\]. Future work could explore \[suggestions for future research\].
 
 ## Results: Likelihood of Being Armed and Demographic Factors
-
