@@ -1,0 +1,115 @@
+---
+title: "add_20241214"
+author: "Eleanor Jiang 305002785"
+date: "2024-12-14"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(knitr)
+```
+
+```{r preprocessing, warning=FALSE}
+data <- read.csv("police_killings.csv")
+# Data cleaning: filter missing values and process variables
+cleaned_data <- data %>%
+  mutate(
+    age = as.numeric(age),
+    urate = as.numeric(urate),
+    pov = as.numeric(pov),
+    share_white = as.numeric(share_white),
+    share_black = as.numeric(share_black),
+    share_hispanic = as.numeric(share_hispanic),
+    p_income = as.numeric(p_income),
+    gender = as.factor(gender),
+    raceethnicity = ifelse(raceethnicity == "Unknown", NA,raceethnicity)
+  ) %>%      
+  filter(!is.na(raceethnicity) & !is.na(comp_income) & !is.na(pov) & !is.na(age) & !is.na(urate) & !is.na(armed)) %>%
+  mutate(
+    armed = factor(ifelse(armed == "No", "No", "Yes")),
+      raceethnicity = factor(raceethnicity),  
+         raceethnicity = relevel(raceethnicity, ref = "White")  
+  )
+
+# Display summary of cleaned data
+glimpse(cleaned_data)
+```
+
+## EDA
+
+```{r eda1}
+par(mfrow = c(2, 1))
+hist(cleaned_data$age, breaks = 20, main = "Age Distribution", xlab = "Age")
+hist(cleaned_data$urate, breaks = 20, main = "Unemployment Rate Distribution", xlab = "Unemployment Rate")
+```
+
+The demographic analysis shows that the deceased had a mean age in their 30s, with the age range extending to over 80. The unemployment rate in their residential tracts averaged 10%, reaching a maximum of 51%. The gender distribution was heavily skewed, with 428 males and 20 females.
+
+
+```{r, eda2, message=FALSE, fig.align='center'}
+race_summary <- cleaned_data %>%
+  count(raceethnicity) %>%
+  mutate(prop = n / sum(n)) %>%
+  kable()
+rq1_data <- cleaned_data %>% filter(raceethnicity %in% c("Black", "White", "Hispanic/Latino"))
+
+library(reshape2)
+library(ggplot2)
+library(viridis)
+
+options(repr.plot.width = 5, repr.plot.height = 1) 
+ggplot(rq1_data, aes(x = comp_income, y = raceethnicity, fill = raceethnicity)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_fill_viridis(discrete = TRUE) +
+  labs(title = "Economic Conditions and Racial Composition",
+       x = "Relative Income",
+       y = "Race/Ethnicity") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    legend.position = "none"
+  ) +
+  coord_flip()
+
+# Create correlation matrix
+cor_matrix <- cor(rq1_data[, c("comp_income", "pov", "nat_bucket", "county_bucket", "p_income", "urate")], use = "complete.obs")
+
+# Melt the correlation matrix
+cor_melted <- melt(cor_matrix)
+
+name_mapping <- c(
+  "comp_income" = "Relative Income",
+  "pov" = "Poverty Rate",
+  "nat_bucket" = "National Income Tier",
+  "county_bucket" = "County Income Tier",
+  "p_income" = "Personal Income Tier",
+  "urate" = "Unemployment Rate"
+)
+
+library(scales)
+options(repr.plot.width = 5, repr.plot.height =4) 
+# Create correlation plot with viridis colors
+ggplot(cor_melted, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_viridis(option = "viridis", limits = c(-1, 1)) +
+  geom_text(aes(label = round(value, 2)), 
+            color = ifelse(abs(cor_melted$value) > 0.5, "white", "black"), 
+            size = 4) +
+  labs(title = "Correlation Plot of Economic Related Indicators",
+       x = "", y = "") +
+  scale_x_discrete(labels = \(x) label_wrap(10)(name_mapping[x])) +
+  scale_y_discrete(labels = \(x) label_wrap(10)(name_mapping[x])) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 10),
+   # axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank()
+  )
+```
+Due to sample size limitations, the racial composition analysis was restricted to three main groups: White (52%), Black, and Hispanic/Latino, with Asian and Native American groups (each <5%) with less than 30 people being excluded from the analysis. For our **research question 1**, it is clear that a multinomial logistic regression is proficient in this case. The box plot reveals distinct income disparities across racial groups, suggesting relative income as a potentially significant predictor. Analysis of economic indicators showed high correlations among most variables, with tract-level unemployment rate being the exception. Based on this correlation analysis, we selected unemployment rate and one additional economic indicator for the final model.
