@@ -303,20 +303,17 @@ kable(combined_table, caption = "Combined Table: Coefficients, Std.Errors, Odds 
 
 ```
 
-
-
-
 ### Research Question 2: Likelihood of Being Armed
 
 #### Distribution of Armed Status
 
-To better understand the prevalence of being armed, Appendix 1 summarizes the distribution of armed status. The analysis reveals that the majority of individuals in the dataset—78.09%—are armed, with only 21.91% classified as unarmed. This substantial difference underscores the predominance of armed individuals within the sample. The bar chart visually reinforces this finding, with the "Yes" category towering over the "No" category. This imbalance raises questions about the underlying reasons for such a distribution, whether cultural, legal, or related to other societal factors.
+To better understand the prevalence of being armed, Appendix 1 summarizes the distribution of armed status. The analysis reveals that the majority of individuals in the dataset—73.96%—are armed, with only 26.04% classified as unarmed. This substantial difference underscores the predominance of armed individuals within the sample. The bar chart visually reinforces this finding, with the "Yes" category towering over the "No" category. This imbalance raises questions about the underlying reasons for such a distribution, whether cultural, legal, or related to other societal factors.
 
 #### Relationship Between Armed Status, Age and Unemployment Rate
 
 To take an initial look at the correlation between these three variables, we first plot a simple scatter plot between unemployment rate and age, colored by armed status.
 
-```{r, fig.height = 4,  fig.width = 8}
+```{r fig.height = 4,  fig.width = 8}
 # Scatter plot
 ggplot(cleaned_data, aes(x = age, y = urate, color = armed, shape = armed)) +
   geom_point(size = 2, alpha = 0.5) +
@@ -346,35 +343,67 @@ The earlier exploratory data analysis (EDA) found no strong relationships betwee
 
 The college variable captures higher education attainment, which is linked to lower unemployment rates and may mitigate social or economic stress factors tied to armed status. Poverty (pov) reflects regional poverty levels, potentially affecting armed status through economic insecurity or limited resources. Including these variables helps account for confounding effects and ensures observed relationships are not due to omitted variable bias.
 
-### Key Results
+The initial regression results are summarized below:
 
-The regression results are summarized below:
+```{r regression results}
+# Refit the logistic regression model
+library(car)
+rq2_model <- glm(
+  armed ~ (age + urate +  college + pov)^2,  data = cleaned_data,
+  family = binomial
+)
 
-::: {.cell tbl-cap="Regression Results"}
-| **Variable**                | **Estimate** | **Std. Error** | **z-value** | **p-value** |
-|:--------------|--------------:|--------------:|--------------:|--------------:|
-| **Intercept**               |        0.512 |          1.413 |      0.3622 |      0.7172 |
-| **Age of Individuals**      |      -0.0046 |         0.0284 |     -0.1629 |      0.8706 |
-| **Unemployment Rate**       |        13.33 |           8.64 |       1.543 |      0.1227 |
-| **College Completion**      |        1.166 |          3.198 |      0.3645 |      0.7155 |
-| **Poverty Rate**            |       0.0191 |         0.0421 |      0.4531 |      0.6505 |
-| **Age × Unemployment Rate** |      -0.1457 |         0.1549 |     -0.9409 |      0.3468 |
-| **Unemployment × College**  |       -30.59 |          17.32 |      -1.766 |      0.0774 |
-:::
+# # Display the summary of the updated model
+# pander(summary(rq2_model))
 
-### Interpretation of Results
+# Summary of refitted model
+model_summary <- summary(rq2_model)
 
-The results indicate that age does not significantly predict armed status (p = 0.8706), aligning with earlier findings of similar age distributions across groups. While unemployment rate (urate) shows a positive but inconclusive relationship with armed status (Estimate = 13.33, p = 0.1227), college education and poverty levels (pov) have weak individual effects (p > 0.65) but help control for confounding factors. Notably, the interaction term Urate × College approaches significance (p = 0.0774), suggesting unemployment may impact individuals with lower education more strongly. Overall, interactions like Age × Urate and Urate × College highlight the complex interplay between age, education, poverty, and unemployment in shaping armed status.
+# Extract coefficients, standard errors, z-values, and p-values
+coef_table <- as.data.frame(model_summary$coefficients)
+colnames(coef_table) <- c("Estimate", "Std. Error", "Z value", "P value")
 
-### Model Diagnostics
+# Add exponentiated coefficients (Odds Ratios)
+coef_table$OddsRatio <- exp(coef_table$Estimate)
 
-The initial diagnostic plots in Appendix 2 reveal issues with the model fit. The Residuals vs. Fitted plot shows non-random patterns, indicating violations of independence and homoscedasticity. The Q-Q plot highlights deviations from normality, particularly in the tails, which, though less critical for logistic regression, can still impact performance. The Scale-Location plot suggests heteroscedasticity, and Cook’s Distance identifies influential points that may skew results.
+# Add confidence intervals
+ci <- confint(rq2_model)
+coef_table$`2.5%` <- exp(ci[, 1])
+coef_table$`97.5%` <- exp(ci[, 2])
 
-After removing observations with high Cook’s Distance and refitting the model, no predictors were significant: age (p = 0.9417), unemployment rate (p = 0.3164), college education (p = 0.4203), and poverty (p = 0.2609). Interaction terms also failed to produce meaningful effects. While residual deviance slightly improved (416.8 on 396 degrees of freedom), overall performance remained unchanged.
+# Rename variables with proper names
+proper_names <- c(
+  "(Intercept)" = "(Intercept)",
+  "age" = "Age",
+  "urate" = "Unemployment Rate (%)",
+  "college" = "College Completion (%)",
+  "pov" = "Poverty Index",
+  "age:urate" = "Age X Unemployment",
+  "age:college" = "Age X College",
+  "age:pov" = "Age X Poverty",
+  "urate:college" = "Unemployment X College",
+  "urate:pov" = "Unemployment X Poverty",
+  "college:pov" = "College X Poverty"
+)
+
+rownames(coef_table) <- proper_names[rownames(coef_table)]
+
+# Display results
+pander(coef_table, caption = "Logistic Regression Results with Proper Variable Names")
+
+```
+
+The initial results indicate that age does not significantly predict armed status (p = 0.8706  ), aligning with earlier findings of similar age distributions across groups. While unemployment rate (urate) shows a positive but inconclusive relationship with armed status (Estimate =  13.33, p = 0.1227 ), college education and poverty levels (pov) have weak individual effects (p \> 0.65) but help control for confounding factors. Notably, the interaction term Urate × College approaches significance (p = 0.0774), suggesting unemployment may impact individuals with lower education more strongly. Overall, interactions like Age × Urate and Urate × College highlight the complex interplay between age, education, poverty, and unemployment in shaping armed status.
+
+### Refitting the Model
+
+The initial diagnostic plots in Appendix 2 reveal issues with the model fit. The Residuals vs. Fitted plot shows non-random patterns, indicating violations of independence. The Q-Q plot highlights deviations from normality, particularly in the tails, which, though less critical for logistic regression, can still impact performance. The Scale-Location plot suggests heteroscedasticity, and Cook’s Distance identifies influential points that may skew results, thought heteroscedasticity is not an assumption for logistic regression.
+
+After removing observations with high Cook’s Distance and refitting the model, see Appendix 3, no predictors were significant: age (p = 0.9417), unemployment rate (p = 0.3164), college education (p = 0.4203), and poverty (p = 0.2609). Interaction terms also failed to produce meaningful effects. While residual deviance slightly improved (416.8 on 396 degrees of freedom), overall performance remained unchanged, and infact led to the model producing "yes" predictions unanimously. 
 
 ### Conclusion
 
-The key takeaway from this analysis is that **age**, **unemployment rate (urate)**, **college education status**, and **poverty levels (pov)** do not significantly predict the likelihood of being armed in this dataset. Despite exploring interaction effects and accounting for potential confounding factors, the logistic regression model yielded no statistically significant results. While the **unemployment rate** showed a positive but inconclusive effect and the **Urate × College** interaction approached significance, these relationships remain weak and require further investigation. Additionally, for the factors associated with racial disparities in police-related incidents in the United States. Counties with **lower relative income** were more likely to have individuals categorized as *Black* rather than *White*. Additionally, counties with a **higher share of college-educated residents** were associated with a lower likelihood of individuals being classified as *Hispanic/Latino*.
+The key takeaway from this analysis is that **age**, **unemployment rate (urate)**, **college education status**, and **poverty levels (pov)** do not significantly predict the likelihood of being armed in this dataset. Despite exploring interaction effects and accounting for potential confounding factors, the logistic regression model yielded no statistically significant results. While the **unemployment rate** showed a positive but inconclusive effect and the **Urate × College** interaction approached significance, these relationships remain weak and require further investigation. Additionally, for the factors associated with racial disparities in police-related incidents in the United States. Counties with **lower relative income** were more likely to have individuals categorized as *Black* rather than *White*. Additionally, counties with a **higher share of college-educated residents** were associated with a lower likelihood of individuals being classified as *Hispanic/Latino*.
 
 This study is not without limitations. The dataset may lack key explanatory variables that capture the broader socioeconomic or contextual factors influencing armed status. Correlation between several economic variables, which may have influenced the observed results. Addressing economic inequalities and exploring additional contextual factors can provide further insights into reducing these disparities. Additionally, the relatively small sample size and presence of influential observations may have limited the model's ability to detect subtle relationships.
 
@@ -396,6 +425,7 @@ armed_summary <- data.frame(
 pander(armed_summary, caption  = "Armed Status Distribution")
 ```
 
+
 ```{r armed-age-plot}
 # Plot 2: Relationship between 'armed' and 'age'
 plot4 <- ggplot(cleaned_data, aes(x = armed, y = age)) +
@@ -409,6 +439,7 @@ plot4 <- ggplot(cleaned_data, aes(x = armed, y = age)) +
 plot4
 
 ```
+
 
 ```{r}
 # Plot 2: Relationship between 'armed' and 'age'
@@ -426,7 +457,8 @@ plot5
 ```
 
 ### 2. Research Question 2 Initial Model
-```{r rq2-model, fig.height = 6,  fig.width = 10}
+
+```{r rq2-model, fig.height = 6,  fig.width = 10, echo=FALSE}
 # Logistic regression
 library(car)
 rq2_model <- glm(
@@ -434,12 +466,49 @@ rq2_model <- glm(
   family = binomial
 )
 
-# Display the summary of the updated model
-pander(summary(rq2_model))
+# # Display the summary of the updated model
+# pander(summary(rq2_model))
 
+# Summary of refitted model
+model_summary <- summary(rq2_model)
+
+# Extract coefficients, standard errors, z-values, and p-values
+coef_table <- as.data.frame(model_summary$coefficients)
+colnames(coef_table) <- c("Estimate", "Std. Error", "Z value", "P value")
+
+# Add exponentiated coefficients (Odds Ratios)
+coef_table$OddsRatio <- exp(coef_table$Estimate)
+
+# Add confidence intervals
+ci <- confint(rq2_model)
+coef_table$`2.5%` <- exp(ci[, 1])
+coef_table$`97.5%` <- exp(ci[, 2])
+
+# Rename variables with proper names
+proper_names <- c(
+  "(Intercept)" = "(Intercept)",
+  "age" = "Age",
+  "urate" = "Unemployment Rate (%)",
+  "college" = "College Completion (%)",
+  "pov" = "Poverty Index",
+  "age:urate" = "Age X Unemployment",
+  "age:college" = "Age X College",
+  "age:pov" = "Age X Poverty",
+  "urate:college" = "Unemployment X College",
+  "urate:pov" = "Unemployment X Poverty",
+  "college:pov" = "College X Poverty"
+)
+
+rownames(coef_table) <- proper_names[rownames(coef_table)]
+
+# Display results
+pander(coef_table, caption = "Logistic Regression Results with Proper Variable Names")
+# 
 # Check for multicollinearity using Variance Inflation Factor (VIF)
 vif_values <- vif(rq2_model)
-print(vif_values)
+pander(vif_values, caption  = "Variable Inflation Factor")
+
+
 
 # Diagnostic plots
 par(mfrow = c(2, 2),  mar = c(5, 5, 4, 2)) # Set plotting area to 2x2
@@ -485,11 +554,37 @@ conf_matrix <- confusionMatrix(
   positive = "Yes",
   mode = "everything"
 )
-pander(conf_matrix)
+
+conf_matrix_table <- as.data.frame(as.table(conf_matrix$table))
+colnames(conf_matrix_table) <- c("Predicted", "Actual", "Frequency")
+
+# Pivot table into matrix format
+conf_matrix_clean <- pivot_wider(
+  conf_matrix_table, 
+  names_from = Predicted, 
+  values_from = Frequency
+)
+
+# Rename rows for clarity
+conf_matrix_clean <- cbind(Actual = conf_matrix_clean$Actual, conf_matrix_clean[,-1])
+
+# Display the formatted table
+
+kable(
+  conf_matrix_clean,
+  caption = "Confusion Matrix (Predicted vs. Actual)",
+  col.names = c("Actual", "Predicted: No", "Predicted: Yes")
+)
+
+# Extract and display overall statistics
+overall_stats <- as.data.frame(t(conf_matrix$overall))
+pander(overall_stats, caption = "Overall Statistics")
+
 ```
 
 ### 3. Research Question 2 Refitted Model
-```{r, fig.height = 6,  fig.width = 10}
+
+```{r, fig.height = 6,  fig.width = 10, echo = FALSE}
 # Cook's Distance threshold
 cooks_threshold <- 4 / nrow(cleaned_data)
 cooks_values <- cooks.distance(rq2_model)
@@ -508,19 +603,44 @@ rq2_model_refit <- glm(
 )
 
 # Summary of refitted model
-pander(summary(rq2_model_refit))
+model_summary <- summary(rq2_model_refit)
+
+# Extract coefficients, standard errors, z-values, and p-values
+coef_table <- as.data.frame(model_summary$coefficients)
+colnames(coef_table) <- c("Estimate", "Std. Error", "Z value", "P value")
+
+# Add exponentiated coefficients (Odds Ratios)
+coef_table$OddsRatio <- exp(coef_table$Estimate)
+
+# Add confidence intervals
+ci <- confint(rq2_model_refit)
+coef_table$`2.5%` <- exp(ci[, 1])
+coef_table$`97.5%` <- exp(ci[, 2])
+
+# Rename variables with proper names
+proper_names <- c(
+  "(Intercept)" = "(Intercept)",
+  "age" = "Age",
+  "urate" = "Unemployment Rate (%)",
+  "college" = "College Completion (%)",
+  "pov" = "Poverty Index",
+  "age:urate" = "Age X Unemployment",
+  "age:college" = "Age X College",
+  "age:pov" = "Age X Poverty",
+  "urate:college" = "Unemployment X College",
+  "urate:pov" = "Unemployment X Poverty",
+  "college:pov" = "College X Poverty"
+)
+
+rownames(coef_table) <- proper_names[rownames(coef_table)]
+
+# Display results
+pander(coef_table, caption = "Logistic Regression Results with Proper Variable Names")
 
 # Re-check model assumptions with diagnostic plots
 par(mfrow = c(2, 2))
 plot(rq2_model_refit)
 par(mfrow = c(1, 1))
-
-# Check for significance
-if (any(summary(rq2_model_refit)$coefficients[, 4] < 0.05)) {
-  print("Significant relationships were found after removing outliers.")
-} else {
-  print("Results remain insignificant; no significant relationships observed.")
-}
 
 
 # Calculate Cook's Distance for refitted model
@@ -546,6 +666,40 @@ text(
   col = "red"
 )
 
+# Confusion Matrix for Model Evaluation
+rq2_model_pred <- ifelse(predict(rq2_model_refit, type = "response") > 0.5, 1, 0)
+rq2_model_pred_fac <- factor(rq2_model_pred, levels = c(0, 1), labels = c("No", "Yes"))
+
+conf_matrix <- confusionMatrix(
+  table(rq2_model_pred_fac, cleaned_data_refit$armed),
+  positive = "Yes",
+  mode = "everything"
+)
+
+conf_matrix_table <- as.data.frame(as.table(conf_matrix$table))
+colnames(conf_matrix_table) <- c("Predicted", "Actual", "Frequency")
+
+# Pivot table into matrix format
+conf_matrix_clean <- pivot_wider(
+  conf_matrix_table, 
+  names_from = Predicted, 
+  values_from = Frequency
+)
+
+# Rename rows for clarity
+conf_matrix_clean <- cbind(Actual = conf_matrix_clean$Actual, conf_matrix_clean[,-1])
+
+# Display the formatted table
+
+kable(
+  conf_matrix_clean,
+  caption = "Confusion Matrix (Predicted vs. Actual)",
+  col.names = c("Actual", "Predicted: No", "Predicted: Yes")
+)
+
+# Extract and display overall statistics
+overall_stats <- as.data.frame(t(conf_matrix$overall))
+pander(overall_stats, caption = "Overall Statistics")
+
 
 ```
-
