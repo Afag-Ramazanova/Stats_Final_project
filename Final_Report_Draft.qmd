@@ -314,7 +314,6 @@ To better understand the prevalence of being armed, Appendix 1 summarizes the di
 To take an initial look at the correlation between these three variables, we first plot a simple scatter plot between unemployment rate and age, colored by armed status.
 
 ```{r fig.height = 4,  fig.width = 8}
-# Scatter plot
 ggplot(cleaned_data, aes(x = age, y = urate, color = armed, shape = armed)) +
   geom_point(size = 2, alpha = 0.5) +
   labs(
@@ -353,25 +352,17 @@ rq2_model <- glm(
   family = binomial
 )
 
-# # Display the summary of the updated model
-# pander(summary(rq2_model))
-
-# Summary of refitted model
 model_summary <- summary(rq2_model)
 
-# Extract coefficients, standard errors, z-values, and p-values
 coef_table <- as.data.frame(model_summary$coefficients)
 colnames(coef_table) <- c("Estimate", "Std. Error", "Z value", "P value")
 
-# Add exponentiated coefficients (Odds Ratios)
 coef_table$OddsRatio <- exp(coef_table$Estimate)
 
-# Add confidence intervals
 ci <- confint(rq2_model)
 coef_table$`2.5%` <- exp(ci[, 1])
 coef_table$`97.5%` <- exp(ci[, 2])
 
-# Rename variables with proper names
 proper_names <- c(
   "(Intercept)" = "(Intercept)",
   "age" = "Age",
@@ -388,7 +379,6 @@ proper_names <- c(
 
 rownames(coef_table) <- proper_names[rownames(coef_table)]
 
-# Display results
 pander(coef_table, caption = "Logistic Regression Results with Proper Variable Names")
 
 ```
@@ -430,7 +420,6 @@ pander(armed_summary, caption  = "Armed Status Distribution")
 
 
 ```{r armed-age-plot}
-# Plot 2: Relationship between 'armed' and 'age'
 plot4 <- ggplot(cleaned_data, aes(x = armed, y = age)) +
   geom_boxplot(fill = "lightblue", outlier.colour = "red", outlier.shape = 1) +
   geom_jitter(width = 0.2, alpha = 0.2) +
@@ -469,25 +458,19 @@ rq2_model <- glm(
   family = binomial
 )
 
-# # Display the summary of the updated model
-# pander(summary(rq2_model))
 
 # Summary of refitted model
 model_summary <- summary(rq2_model)
 
-# Extract coefficients, standard errors, z-values, and p-values
 coef_table <- as.data.frame(model_summary$coefficients)
 colnames(coef_table) <- c("Estimate", "Std. Error", "Z value", "P value")
 
-# Add exponentiated coefficients (Odds Ratios)
 coef_table$OddsRatio <- exp(coef_table$Estimate)
 
-# Add confidence intervals
 ci <- confint(rq2_model)
 coef_table$`2.5%` <- exp(ci[, 1])
 coef_table$`97.5%` <- exp(ci[, 2])
 
-# Rename variables with proper names
 proper_names <- c(
   "(Intercept)" = "(Intercept)",
   "age" = "Age",
@@ -504,7 +487,6 @@ proper_names <- c(
 
 rownames(coef_table) <- proper_names[rownames(coef_table)]
 
-# Display results
 pander(coef_table, caption = "Logistic Regression Results with Proper Variable Names")
 # 
 # Check for multicollinearity using Variance Inflation Factor (VIF)
@@ -516,7 +498,6 @@ pander(vif_values, caption  = "Variable Inflation Factor")
 # Diagnostic plots
 par(mfrow = c(2, 2),  mar = c(5, 5, 4, 2)) # Set plotting area to 2x2
 
-# Residual vs Fitted
 plot(rq2_model$fitted.values, residuals(rq2_model, type = "deviance"),
      xlab = "Fitted Values",
      ylab = "Deviance Residuals",
@@ -524,13 +505,11 @@ plot(rq2_model$fitted.values, residuals(rq2_model, type = "deviance"),
      pch = 20, col = "blue")
 abline(h = 0, col = "red", lty = 2)
 
-# Normal Q-Q Plot
 qqnorm(residuals(rq2_model, type = "deviance"), 
        main = "Normal Q-Q Plot of Residuals",
        pch = 20, col = "blue")
 qqline(residuals(rq2_model, type = "deviance"), col = "red", lty = 2)
 
-# Scale-Location Plot
 plot(rq2_model$fitted.values, sqrt(abs(residuals(rq2_model, type = "deviance"))),
      xlab = "Fitted Values",
      ylab = "Sqrt |Deviance Residuals|",
@@ -538,7 +517,6 @@ plot(rq2_model$fitted.values, sqrt(abs(residuals(rq2_model, type = "deviance")))
      pch = 20, col = "blue")
 abline(h = 0, col = "red", lty = 2)
 
-# Cook's Distance
 plot(cooks.distance(rq2_model), 
      xlab = "Index",
      ylab = "Cook's Distance",
@@ -561,17 +539,14 @@ conf_matrix <- confusionMatrix(
 conf_matrix_table <- as.data.frame(as.table(conf_matrix$table))
 colnames(conf_matrix_table) <- c("Predicted", "Actual", "Frequency")
 
-# Pivot table into matrix format
 conf_matrix_clean <- pivot_wider(
   conf_matrix_table, 
   names_from = Predicted, 
   values_from = Frequency
 )
 
-# Rename rows for clarity
 conf_matrix_clean <- cbind(Actual = conf_matrix_clean$Actual, conf_matrix_clean[,-1])
 
-# Display the formatted table
 
 kable(
   conf_matrix_clean,
@@ -579,13 +554,11 @@ kable(
   col.names = c("Actual", "Predicted: No", "Predicted: Yes")
 )
 
-# Extract and display overall statistics
 overall_stats <- as.data.frame(t(conf_matrix$overall))
 pander(overall_stats, caption = "Overall Statistics")
 
 
 # Calculating Estimates using Implied Model
-
 new_data <- data.frame(
   age = c(30, 40, 50),  # example ages
   urate = c(0.05),      # fixed urate
@@ -611,10 +584,8 @@ pander(summary(emms), caption = "Estimates from Implied Model (Unemployment)")
 cooks_threshold <- 4 / nrow(cleaned_data)
 cooks_values <- cooks.distance(rq2_model)
 
-# Identify influential observations
 influential_points <- which(cooks_values > cooks_threshold)
 
-# Remove influential observations
 cleaned_data_refit <- cleaned_data[-influential_points, ]
 
 # Refit the logistic regression model
@@ -627,19 +598,15 @@ rq2_model_refit <- glm(
 # Summary of refitted model
 model_summary <- summary(rq2_model_refit)
 
-# Extract coefficients, standard errors, z-values, and p-values
 coef_table <- as.data.frame(model_summary$coefficients)
 colnames(coef_table) <- c("Estimate", "Std. Error", "Z value", "P value")
 
-# Add exponentiated coefficients (Odds Ratios)
 coef_table$OddsRatio <- exp(coef_table$Estimate)
 
-# Add confidence intervals
 ci <- confint(rq2_model_refit)
 coef_table$`2.5%` <- exp(ci[, 1])
 coef_table$`97.5%` <- exp(ci[, 2])
 
-# Rename variables with proper names
 proper_names <- c(
   "(Intercept)" = "(Intercept)",
   "age" = "Age",
@@ -656,19 +623,16 @@ proper_names <- c(
 
 rownames(coef_table) <- proper_names[rownames(coef_table)]
 
-# Display results
 pander(coef_table, caption = "Logistic Regression Results with Proper Variable Names")
 
-# Re-check model assumptions with diagnostic plots
 par(mfrow = c(2, 2))
 plot(rq2_model_refit)
 par(mfrow = c(1, 1))
 
 
-# Calculate Cook's Distance for refitted model
+# Calculate Cook's Distance 
 cooks_values_refit <- cooks.distance(rq2_model_refit)
 
-# Plot Cook's Distance
 plot(
   cooks_values_refit, 
   pch = 20, 
@@ -688,7 +652,7 @@ text(
   col = "red"
 )
 
-# Confusion Matrix for Model Evaluation
+# Confusion Matrix 
 rq2_model_pred <- ifelse(predict(rq2_model_refit, type = "response") > 0.5, 1, 0)
 rq2_model_pred_fac <- factor(rq2_model_pred, levels = c(0, 1), labels = c("No", "Yes"))
 
@@ -701,17 +665,14 @@ conf_matrix <- confusionMatrix(
 conf_matrix_table <- as.data.frame(as.table(conf_matrix$table))
 colnames(conf_matrix_table) <- c("Predicted", "Actual", "Frequency")
 
-# Pivot table into matrix format
 conf_matrix_clean <- pivot_wider(
   conf_matrix_table, 
   names_from = Predicted, 
   values_from = Frequency
 )
 
-# Rename rows for clarity
 conf_matrix_clean <- cbind(Actual = conf_matrix_clean$Actual, conf_matrix_clean[,-1])
 
-# Display the formatted table
 
 kable(
   conf_matrix_clean,
@@ -719,7 +680,6 @@ kable(
   col.names = c("Actual", "Predicted: No", "Predicted: Yes")
 )
 
-# Extract and display overall statistics
 overall_stats <- as.data.frame(t(conf_matrix$overall))
 pander(overall_stats, caption = "Overall Statistics")
 
