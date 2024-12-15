@@ -17,6 +17,8 @@ library(knitr)
 library(pander)
 library(caret)
 knitr::opts_chunk$set(echo = FALSE)
+
+print(summary(data$armed))
 ```
 
 ## Abstract
@@ -31,9 +33,9 @@ Research has shown that economic conditions and racial demographics can signific
 
 This report aims to contribute to this body of knowledge by examining two key research questions:
 
-1. Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?
+1.  Is there an association between the economic conditions of a county and the racial composition of individuals involved in police-related incidents?
 
-2. Does the likelihood of an individual being armed during such incidents vary based on their age and the unemployment rate in their area?
+2.  Does the likelihood of an individual being armed during such incidents vary based on their age and the unemployment rate in their area?
 
 By analyzing data from the Guardian's database on police killings, linked with the American Community Survey (2015), this study seeks to provide insights into these critical questions (Guardian, 2015). The dataset, which includes demographic, economic, and geographic information, offers a unique opportunity to explore the potential relationships between socioeconomic factors and the characteristics of police-related incidents. Understanding these dynamics can inform evidence-based policy-making and interventions aimed at improving community safety and promoting equity in law enforcement practices.
 
@@ -46,6 +48,7 @@ cleaned_data <- data %>%
   mutate(
     age = as.numeric(age),
     urate = as.numeric(urate),
+    gender = as.factor(gender),
     pov = as.numeric(pov),
     share_white = as.numeric(share_white),
     share_black = as.numeric(share_black),
@@ -55,7 +58,7 @@ cleaned_data <- data %>%
   ) %>%      
   filter(!is.na(raceethnicity) & !is.na(comp_income) & !is.na(pov) & !is.na(age) & !is.na(urate) & !is.na(armed)) %>%
   mutate(
-    armed = factor(ifelse(armed == "No", "No", "Yes")),
+      armed = factor(ifelse(armed %in% c("No", "Vehicle","Disputed"), "No", "Yes")),
       raceethnicity = factor(raceethnicity),  
          raceethnicity = relevel(raceethnicity, ref = "White")  
   )
@@ -78,9 +81,9 @@ To prepare the data for analysis, entries with missing values were excluded. Sin
 
 ### Model fitting and evaluation
 
-The models were selected based on the specific research questions and the nature of the variables involved. For Research Question 1, which examines the relationship between economic conditions and racial composition, a multinomial logistic regression model was appropriate given the categorical nature of the outcome variable, race/ethnicity, with multiple nominal categories. The independent variables, relative income, poverty level, college level and unemployment rate, were chosen to capture key socioeconomic dimensions influencing racial or ethnic group differences. This model enables the examination of how economic factors are associated with the likelihood of belonging to different racial or ethnic categories.
+For Research Question 1, which examines the relationship between economic conditions and racial composition, a multinomial logistic regression model was appropriate given the categorical nature of the outcome variable, race/ethnicity, with multiple nominal categories. The independent variables, relative income, poverty level, college level and unemployment rate, were chosen to capture key socioeconomic dimensions influencing racial or ethnic group differences. This model enables the examination of how economic factors are associated with the likelihood of belonging to different racial or ethnic categories.
 
-For Research Question 2, a logistic regression model was employed to analyze the binary outcome variable, armed (armed status of the individual). The independent variables include age and urate (unemployment rate), which serve as proxies for demographic and socioeconomic factors. An interaction term (age:urate) was included to explore whether the relationship between unemployment and armed status depends on age, allowing for a more nuanced understanding of their combined effects.
+For Research Question 2, a logistic regression model was employed to analyze the binary outcome variable, armed (armed status of the individual). The independent variables include age, urate (unemployment rate), gender, race/ethnicity, and college level which serve as proxies for demographic and socioeconomic factors. All interaction terms between these variables are also included to adjust for possible multicollinearity between the variable.
 
 Both models were supported by diagnostic evaluations to ensure reliability. Correlation matrix and Variance Inflation Factor (VIF) was used to check for multicollinearity and correlation, and Cook’s distance assessed the influence of individual data points. Classification performance was further evaluated using a confusion matrix, accuracy, precision, recall, and F1 scores, providing a detailed breakdown of the model's predictive capabilities for each category. The area under the Receiver Operating Characteristic (ROC) curve (AUC) was used as an additional metric to assess the model's ability to distinguish between categories. Residual diagnostics, including residual vs. fitted plots, were used to evaluate linearity and homoscedasticity. These diagnostic evaluations and performance metrics ensure that the models are well-suited to address the research questions, effectively capturing the underlying dynamics in the data. All statistical analyses were conducted using R programming language
 
@@ -114,6 +117,7 @@ Model diagnostics included checks for multicollinearity using Variance Inflation
 ## Results
 
 ### Exploratory Data Analysis
+
 ```{r eda1}
 par(mar = c(4, 4, 2, 2)) # Reduce margins
 par(mfrow = c(2, 1))
@@ -189,8 +193,7 @@ ggplot(cor_melted, aes(x = Var1, y = Var2, fill = value)) +
   )
 ```
 
-Due to sample size limitations, the racial composition analysis was restricted to three main groups: White (52%), Black, and Hispanic/Latino, with Asian and Native American groups (each <5%) with less than 30 people being excluded from the analysis. For our **research question 1**, it is clear that a multinomial logistic regression is proficient in this case. The box plot reveals distinct income disparities across racial groups, suggesting relative income as a potentially significant predictor. Analysis of economic indicators showed high correlations among most variables, with tract-level unemployment rate being the exception. Based on this correlation analysis, we selected unemployment rate and one additional economic indicator for the final model.
-
+Due to sample size limitations, the racial composition analysis was restricted to three main groups: White (52%), Black, and Hispanic/Latino, with Asian and Native American groups (each \<5%) with less than 30 people being excluded from the analysis. For our **research question 1**, it is clear that a multinomial logistic regression is proficient in this case. The box plot reveals distinct income disparities across racial groups, suggesting relative income as a potentially significant predictor. Analysis of economic indicators showed high correlations among most variables, with tract-level unemployment rate being the exception. Based on this correlation analysis, we selected unemployment rate and one additional economic indicator for the final model.
 
 ### Research Question 1: Economic Conditions and Racial Composition
 
@@ -330,20 +333,105 @@ kable(combined_table, caption = "Combined Table: Coefficients, Std.Errors, Odds 
 
 ```
 
-
 ### Research Question 2: Likelihood of Being Armed
+
+#### Distribution of Armed Status
+
+To better understand the prevalence of being armed, Table 7 and the accompanying bar chart summarize the distribution of armed status. The analysis reveals that the majority of individuals in the dataset—78.09%—are armed, with only 21.91% classified as unarmed. This substantial difference underscores the predominance of armed individuals within the sample. The bar chart visually reinforces this finding, with the "Yes" category towering over the "No" category. This imbalance raises questions about the underlying reasons for such a distribution, whether cultural, legal, or related to other societal factors.
+
+```{r armed-status-plot}
+# Armed Status Distribution
+armed_counts <- table(cleaned_data$armed)
+armed_percentages <- prop.table(armed_counts) * 100
+armed_summary <- data.frame(
+  Armed_Status = names(armed_counts),
+  Count = as.integer(armed_counts),
+  Percentage = round(as.numeric(armed_percentages), 2) # Round percentages for clarity
+)
+pander(armed_summary, caption  = "Armed Status Distribution")
+```
+
+
+#### Relationship Between Armed Status, Age and Unemployment Rate
+
+To take an initial look at the correlation between these three variables, we first plot a simple scatter plot between unemployment rate and age, colored by armed status.
+
+```{r}
+# Scatter plot
+ggplot(cleaned_data, aes(x = age, y = urate, color = armed, shape = armed)) +
+  geom_point(size = 3, alpha = 0.5) +
+  labs(
+    title = "Scatter Plot of Unemployment Rate vs. Age by Armed Status",
+    x = "Age",
+    y = "Unemployment Rate (%)",
+    color = "Armed Status",
+    shape = "Armed Status"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+The scatter plot shows, firstly most individuals are between 20 and 50 years old, with unemployment rates clustering below 20%. The "Yes" (armed) group is more evenly distributed across ages and slightly concentrated at lower unemployment rates, while the "No" (unarmed) group shows a few more cases of elevated unemployment rates above 20%. Outliers with unemployment rates exceeding 40% appear primarily in the armed group. Overall, no clear trend emerges between age and unemployment rate, and the patterns between armed and unarmed groups are broadly similar.
+
+We further explore the relationship between age and armed status through a box plot, which compares the age distribution for armed and unarmed individuals. The plot illustrates that the age ranges and medians for both groups are remarkably similar, suggesting no significant difference in age distribution between those who are armed and those who are not. This visual evidence supports the regression findings, reinforcing the conclusion that age alone is not a strong determinant of armed status. Nonetheless, the lack of significant variability in the data suggests that other contextual factors beyond age may play a more crucial role in influencing armed status.
+
+```{r armed-age-plot}
+# Plot 2: Relationship between 'armed' and 'age'
+plot4 <- ggplot(cleaned_data, aes(x = armed, y = age)) +
+  geom_boxplot(fill = "lightblue", outlier.colour = "red", outlier.shape = 1) +
+  geom_jitter(width = 0.2, alpha = 0.2) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Relationship between Armed Status and Age",
+       x = "Armed Status",
+       y = "Age")
+plot4
+
+```
+
+```{r}
+# Plot 2: Relationship between 'armed' and 'age'
+plot5 <- ggplot(cleaned_data, aes(x = armed, y = urate)) +
+  geom_boxplot(fill = "lightblue", outlier.colour = "red", outlier.shape = 1) +
+  geom_jitter(width = 0.2, alpha = 0.2) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Relationship between Armed Status and Unemplyement Rate",
+       x = "Armed Status",
+       y = "Unemployment Rate")
+plot5
+
+
+```
+
+In a similar manner, we can take a deeper dive into the relationship between armed status and unemployment rate by plotting a box plot with jittered points for both groups. The visualization demonstrates that the median and interquartile range of unemployment rates are relatively similar for armed and unarmed individuals. However, the presence of outliers, particularly for the armed group, suggests that there may be certain individuals with unusually high unemployment rates. Despite this, the overall spread of the data indicates that unemployment rate, much like age, does not exhibit strong variability across armed status groups. This lack of pronounced difference implies that other contextual factors beyond unemployment rate likely play a more significant role in influencing armed status.
+
+
+#### Logistic Regression
+Although from the charts, we don't see a pronounced correlation between armed status and either age or unemployment rate, we would need to fit a logistic regression model to truly tell whether there are any significant correlations between them. 
+
+[TODO: replace this interpretation with an updated one based on our new model
+Talk about why we're including college and pov, what they are, and how they might be possible confounding variables]
 
 The logistic regression model investigates how age, unemployment rate, and their interaction impact the likelihood of being armed. The results indicate no statistically significant relationship between age and armed status (p = 0.7794). This suggests that age alone does not serve as a direct predictor of whether an individual is armed. Similarly, the interaction effect between age and unemployment rate is not significant (p = 0.3639), implying that the combined influence of these factors does not meaningfully affect the likelihood of being armed. However, unemployment rate shows a positive, albeit not statistically significant, relationship with being armed (p = 0.2748). This points to the possibility that higher unemployment rates might indirectly contribute to armed status, potentially through heightened stress or shifts in social dynamics. Although the statistical evidence is not strong, these relationships warrant closer examination in future studies.
 
 ```{r rq2-model}
 # Logistic regression
 rq2_model <- glm(
-  armed ~ age + urate + age:urate,
-  data = cleaned_data,
+  armed ~ (age + urate +  college + pov)^2,  data = cleaned_data,
   family = binomial
 )
+
+# Display the summary of the updated model
 pander(summary(rq2_model))
 
+# Check for multicollinearity using Variance Inflation Factor (VIF)
+vif_values <- vif(rq2_model)
+print(vif_values)
+
+# Diagnostic plots
 par(mfrow = c(2, 2)) # Set plotting area to 2x2
 
 # Residual vs Fitted
@@ -377,79 +465,30 @@ plot(cooks.distance(rq2_model),
 abline(h = 4/(nrow(cleaned_data) - length(rq2_model$coefficients)), col = "red", lty = 2)
 
 par(mfrow = c(1, 1)) # Reset plotting area
+
+# Confusion Matrix for Model Evaluation
+rq2_model_pred <- ifelse(predict(rq2_model, type = "response") > 0.5, 1, 0)
+rq2_model_pred_fac <- factor(rq2_model_pred, levels = c(0, 1), labels = c("No", "Yes"))
+
+conf_matrix <- confusionMatrix(
+  table(rq2_model_pred_fac, cleaned_data$armed),
+  positive = "Yes",
+  mode = "everything"
+)
+pander(conf_matrix)
 ```
-
-```{r resutlss, include=FALSE}
-rq2_model_pred <- ifelse(predict(rq2_model, type="response")>0.5,1,0)
-rq2_model_pred_fac <- factor(rq2_model_pred,
-                            levels=c(0,1),
-                            labels=c("No", "Yes"))
-confusionMatrix(table(rq2_model_pred_fac, cleaned_data$armed),
-                positive="Yes",
-                mode="everything")
-
-
-```
-
 The diagnostic plots suggest areas of concern regarding the model fit. The Residuals vs. Fitted plot reveals non-random patterns, indicating possible model misfit or missing predictors. The Normal Q-Q Plot shows deviations from normality in the residuals, particularly in the tails, which could affect the interpretation of the model. The Scale-Location Plot suggests mild heteroscedasticity, with residual variance increasing at higher fitted values. The Cook’s Distance plot identifies a few influential points, though most observations fall within acceptable limits. These findings indicate the need for further refinement, such as adding predictors or adjusting the model specification, to better capture the data's underlying relationships.
 
-### Distribution of Armed Status
-
-To better understand the prevalence of being armed, Table 7 and the accompanying bar chart summarize the distribution of armed status. The analysis reveals that the majority of individuals in the dataset—78.09%—are armed, with only 21.91% classified as unarmed. This substantial difference underscores the predominance of armed individuals within the sample. The bar chart visually reinforces this finding, with the "Yes" category towering over the "No" category. This imbalance raises questions about the underlying reasons for such a distribution, whether cultural, legal, or related to other societal factors.
-
-```{r armed-status-plot}
-# Armed Status Distribution
-armed_counts <- table(cleaned_data$armed)
-armed_percentages <- prop.table(armed_counts) * 100
-armed_summary <- data.frame(
-  Armed_Status = names(armed_counts),
-  Count = as.integer(armed_counts),
-  Percentage = round(as.numeric(armed_percentages), 2) # Round percentages for clarity
-)
-pander(armed_summary, caption  = "Armed Status Distribution")
+[TODO: Comment on the model fit etc., talk about the model assumptions, and try refitting the model after excluding outliers based on cook's distance
+Logic: 
+ 1. We see that the variables are not significant -> comment on that
+ 2. However, we also see that several model assumptions might have been violated based on the diagnostic plot
+ 3. Refit the model
+ 4. -> if results are significant, write an interpretation saying that we found significant correlation
+      -> else: write how the results are still not significant, and there's no significant correlation between the variables etc.
+]
 
 
-# Plot 1: Distribution of Armed Status
-plot3 <- ggplot(cleaned_data, aes(x = armed)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(title = "Distribution of Armed Status", x = "Armed Status", y = "Count")
-plot3
-```
-
-### Relationship Between Armed Status and Age
-
-The relationship between age and armed status is further explored through a box plot, which compares the age distribution for armed and unarmed individuals. The plot illustrates that the age ranges and medians for both groups are remarkably similar, suggesting no significant difference in age distribution between those who are armed and those who are not. This visual evidence supports the regression findings, reinforcing the conclusion that age alone is not a strong determinant of armed status. Nonetheless, the lack of significant variability in the data suggests that other contextual factors beyond age may play a more crucial role in influencing armed status.
-
-```{r armed-age-plot}
-# Plot 2: Relationship between 'armed' and 'age'
-plot4 <- ggplot(cleaned_data, aes(x = armed, y = age)) +
-  geom_boxplot(fill = "lightblue", outlier.colour = "red", outlier.shape = 1) +
-  geom_jitter(width = 0.2, alpha = 0.2) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(title = "Relationship between Armed Status and Age",
-       x = "Armed Status",
-       y = "Age")
-plot4
-
-```
-
-```{r age-plot}
-ggplot(cleaned_data, aes(x = age, fill = armed)) +
-  geom_histogram(position = "fill", bins = 20) +
-  labs(title = "Likelihood of Being Armed by Age", x = "Age", y = "Proportion")
-```
-
-### Unemployment Rate and Likelihood of Being Armed
-
-The role of unemployment rate is captured in the histogram, which displays the proportion of armed individuals across varying levels of unemployment. While the logistic regression did not find this relationship to be statistically significant, the visualizations hint at a potential pattern. Specifically, the proportion of armed individuals appears to increase slightly at higher unemployment rates. This observation suggests that unemployment could contribute indirectly to the likelihood of being armed, potentially reflecting economic pressures or broader social dynamics at play. The trend, while subtle, calls for more granular investigations to uncover the precise mechanisms underlying this association.
-
-```{r urate-plot}
-ggplot(cleaned_data, aes(x = urate, fill = armed)) +
-  geom_histogram(position = "fill", bins = 20) +
-  labs(title = "Likelihood of Being Armed by Unemployment Rate", x = "Unemployment Rate", y = "Proportion")
-```
 
 ## Conclusion
 
