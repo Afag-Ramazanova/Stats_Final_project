@@ -8,6 +8,11 @@ execute:
   echo: false
   warning: false
   message: false
+header-includes:
+      - \usepackage{float}
+      - \usepackage{amsmath}
+      - \floatplacement{table}{H}
+      - \usepackage[top=0.8in, bottom=0.8in, left=0.8in, right=0.8in]{geometry}
 ---
 
 ```{r setup, include=FALSE}
@@ -311,7 +316,7 @@ To better understand the prevalence of being armed, Appendix 1 summarizes the di
 
 To take an initial look at the correlation between these three variables, we first plot a simple scatter plot between unemployment rate and age, colored by armed status.
 
-```{r}
+```{r, fig.height = 4,  fig.width = 8}
 # Scatter plot
 ggplot(cleaned_data, aes(x = age, y = urate, color = armed, shape = armed)) +
   geom_point(size = 2, alpha = 0.5) +
@@ -337,12 +342,9 @@ Similarly, we explore the relationship between armed status and unemployment rat
 
 #### Logistic Regression
 
-**Motivation and Model Design**
+The earlier exploratory data analysis (EDA) found no strong relationships between age, unemployment rate (urate), and armed status, so a logistic regression model was used to formally test these relationships. To control for potential confounders, college education status and poverty levels (pov) were included, as they may influence both unemployment rates and armed status (see Appendix 2 for details).
 
-While the earlier exploratory data analysis (EDA) did not reveal pronounced relationships between **age**, **unemployment rate (urate)**, and **armed status**, a logistic regression model was employed to formally quantify these relationships and test for statistical significance. To account for potential confounding effects, **college education status** and **poverty levels (pov)** were included in the model. These variables are theoretically relevant, as they may influence socioeconomic conditions that impact both unemployment rates and armed status. See Appendix 2 for initial modeling results. 
-
-The **college** variable represents whether individuals have attained higher education. Lower education levels are often associated with higher unemployment rates, which can indirectly contribute to social or economic stress factors that correlate with armed status. Similarly, **poverty (pov)** measures the proportion of individuals in poverty within a region. Poverty may directly or indirectly influence armed status through economic insecurity, limited access to resources, or broader community-level factors. By including these variables, the model adjusts for their potential confounding effects and ensures that any observed relationships between age, unemployment rate, and armed status are not falsely attributed due to omitted variable bias.
-
+The college variable captures higher education attainment, which is linked to lower unemployment rates and may mitigate social or economic stress factors tied to armed status. Poverty (pov) reflects regional poverty levels, potentially affecting armed status through economic insecurity or limited resources. Including these variables helps account for confounding effects and ensures observed relationships are not due to omitted variable bias.
 
 ### Key Results
 
@@ -362,11 +364,7 @@ The regression results are summarized below:
 
 ### Interpretation of Results
 
-The results show that **age** does not significantly predict armed status (p = 0.8706), consistent with earlier findings where age distributions were similar across groups. While the **unemployment rate (urate)** has a positive relationship with armed status (Estimate = 13.33), it is not statistically significant (p = 0.1227), suggesting a possible but inconclusive link.
-
-Both **college education** and **poverty levels (pov)** have weak individual effects (p \> 0.65), but their inclusion helps account for confounding factors. Interestingly, the interaction term **Urate × College** is close to significance (p = 0.0774), hinting that unemployment may have a stronger impact on individuals with lower education levels.
-
-Overall, interactions like **Age × Urate** and **Urate × College** suggest that age, education, and poverty interact in complex ways, shaping how unemployment relates to armed status.
+The results indicate that age does not significantly predict armed status (p = 0.8706), aligning with earlier findings of similar age distributions across groups. While unemployment rate (urate) shows a positive but inconclusive relationship with armed status (Estimate = 13.33, p = 0.1227), college education and poverty levels (pov) have weak individual effects (p > 0.65) but help control for confounding factors. Notably, the interaction term Urate × College approaches significance (p = 0.0774), suggesting unemployment may impact individuals with lower education more strongly. Overall, interactions like Age × Urate and Urate × College highlight the complex interplay between age, education, poverty, and unemployment in shaping armed status.
 
 ### Model Diagnostics
 
@@ -428,7 +426,7 @@ plot5
 ```
 
 ### 2. Research Question 2 Initial Model
-```{r rq2-model}
+```{r rq2-model, fig.height = 6,  fig.width = 10}
 # Logistic regression
 library(car)
 rq2_model <- glm(
@@ -444,7 +442,7 @@ vif_values <- vif(rq2_model)
 print(vif_values)
 
 # Diagnostic plots
-par(mfrow = c(2, 2)) # Set plotting area to 2x2
+par(mfrow = c(2, 2),  mar = c(5, 5, 4, 2)) # Set plotting area to 2x2
 
 # Residual vs Fitted
 plot(rq2_model$fitted.values, residuals(rq2_model, type = "deviance"),
@@ -491,7 +489,7 @@ pander(conf_matrix)
 ```
 
 ### 3. Research Question 2 Refitted Model
-```{r}
+```{r, fig.height = 6,  fig.width = 10}
 # Cook's Distance threshold
 cooks_threshold <- 4 / nrow(cleaned_data)
 cooks_values <- cooks.distance(rq2_model)
