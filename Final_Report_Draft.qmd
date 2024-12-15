@@ -83,10 +83,6 @@ For Research Question 2, a logistic regression model was employed to analyze the
 
 Both models were supported by diagnostic evaluations to ensure reliability. Correlation matrix and Variance Inflation Factor (VIF) was used to check for multicollinearity and correlation, and Cook’s distance assessed the influence of individual data points. Classification performance was further evaluated using a confusion matrix, accuracy, precision, recall, and F1 scores, providing a detailed breakdown of the model's predictive capabilities for each category. The area under the Receiver Operating Characteristic (ROC) curve (AUC) was used as an additional metric to assess the model's ability to distinguish between categories. Residual diagnostics, including residual vs. fitted plots, were used to evaluate linearity and homoscedasticity. These diagnostic evaluations and performance metrics ensure that the models are well-suited to address the research questions, effectively capturing the underlying dynamics in the data. All statistical analyses were conducted using R programming language
 
-### Model Assessment
-
-Model diagnostics included checks for multicollinearity using Variance Inflation Factor (VIF) and assessment of influential points via Cook's distance. For the multinomial model, pseudo-R² and AIC measures were calculated. For the logistic model, residual patterns were assessed for misfit.
-
 ## Results
 
 ### Exploratory Data Analysis
@@ -302,11 +298,93 @@ kable(combined_table, caption = "Combined Table: Coefficients, Std.Errors, Odds 
 
 ```
 
+
+
+
 ### Research Question 2: Likelihood of Being Armed
 
 #### Distribution of Armed Status
 
-To better understand the prevalence of being armed, Table 7 and the accompanying bar chart summarize the distribution of armed status. The analysis reveals that the majority of individuals in the dataset—78.09%—are armed, with only 21.91% classified as unarmed. This substantial difference underscores the predominance of armed individuals within the sample. The bar chart visually reinforces this finding, with the "Yes" category towering over the "No" category. This imbalance raises questions about the underlying reasons for such a distribution, whether cultural, legal, or related to other societal factors.
+To better understand the prevalence of being armed, Appendix 1 summarizes the distribution of armed status. The analysis reveals that the majority of individuals in the dataset—78.09%—are armed, with only 21.91% classified as unarmed. This substantial difference underscores the predominance of armed individuals within the sample. The bar chart visually reinforces this finding, with the "Yes" category towering over the "No" category. This imbalance raises questions about the underlying reasons for such a distribution, whether cultural, legal, or related to other societal factors.
+
+#### Relationship Between Armed Status, Age and Unemployment Rate
+
+To take an initial look at the correlation between these three variables, we first plot a simple scatter plot between unemployment rate and age, colored by armed status.
+
+```{r}
+# Scatter plot
+ggplot(cleaned_data, aes(x = age, y = urate, color = armed, shape = armed)) +
+  geom_point(size = 2, alpha = 0.5) +
+  labs(
+    title = "Unemployment Rate vs. Age by Armed Status",
+    x = "Age",
+    y = "Unemployment Rate (%)",
+    color = "Armed Status",
+    shape = "Armed Status"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
+The scatter plot reveals that most individuals are aged 20–50, with unemployment rates clustering below 20%. The "Yes" (armed) group is more evenly distributed across ages and leans toward lower unemployment rates, while the "No" (unarmed) group has slightly more cases with unemployment rates above 20%. Outliers above 40% unemployment are mostly in the armed group. Overall, no clear trend links age and unemployment, with patterns between armed and unarmed groups being similar.
+
+The box plots, see Appendix 1, further compares age distributions for armed and unarmed individuals, showing similar ranges and medians. This suggests age is not a significant factor in determining armed status, aligning with regression results. The limited variability indicates other contextual factors may play a larger role.
+
+Similarly, we explore the relationship between armed status and unemployment rate using a box plot with jittered points. The plot shows that the median and interquartile ranges of unemployment rates are similar for both groups. However, outliers, especially in the armed group, highlight individuals with unusually high unemployment rates. Despite this, the overall spread suggests unemployment rate, like age, shows little variability across armed status groups, indicating other factors likely play a greater role in determining armed status.
+
+#### Logistic Regression
+
+**Motivation and Model Design**
+
+While the earlier exploratory data analysis (EDA) did not reveal pronounced relationships between **age**, **unemployment rate (urate)**, and **armed status**, a logistic regression model was employed to formally quantify these relationships and test for statistical significance. To account for potential confounding effects, **college education status** and **poverty levels (pov)** were included in the model. These variables are theoretically relevant, as they may influence socioeconomic conditions that impact both unemployment rates and armed status. See Appendix 2 for initial modeling results. 
+
+The **college** variable represents whether individuals have attained higher education. Lower education levels are often associated with higher unemployment rates, which can indirectly contribute to social or economic stress factors that correlate with armed status. Similarly, **poverty (pov)** measures the proportion of individuals in poverty within a region. Poverty may directly or indirectly influence armed status through economic insecurity, limited access to resources, or broader community-level factors. By including these variables, the model adjusts for their potential confounding effects and ensures that any observed relationships between age, unemployment rate, and armed status are not falsely attributed due to omitted variable bias.
+
+
+### Key Results
+
+The regression results are summarized below:
+
+::: {.cell tbl-cap="Regression Results"}
+| **Variable**                | **Estimate** | **Std. Error** | **z-value** | **p-value** |
+|:--------------|--------------:|--------------:|--------------:|--------------:|
+| **Intercept**               |        0.512 |          1.413 |      0.3622 |      0.7172 |
+| **Age of Individuals**      |      -0.0046 |         0.0284 |     -0.1629 |      0.8706 |
+| **Unemployment Rate**       |        13.33 |           8.64 |       1.543 |      0.1227 |
+| **College Completion**      |        1.166 |          3.198 |      0.3645 |      0.7155 |
+| **Poverty Rate**            |       0.0191 |         0.0421 |      0.4531 |      0.6505 |
+| **Age × Unemployment Rate** |      -0.1457 |         0.1549 |     -0.9409 |      0.3468 |
+| **Unemployment × College**  |       -30.59 |          17.32 |      -1.766 |      0.0774 |
+:::
+
+### Interpretation of Results
+
+The results show that **age** does not significantly predict armed status (p = 0.8706), consistent with earlier findings where age distributions were similar across groups. While the **unemployment rate (urate)** has a positive relationship with armed status (Estimate = 13.33), it is not statistically significant (p = 0.1227), suggesting a possible but inconclusive link.
+
+Both **college education** and **poverty levels (pov)** have weak individual effects (p \> 0.65), but their inclusion helps account for confounding factors. Interestingly, the interaction term **Urate × College** is close to significance (p = 0.0774), hinting that unemployment may have a stronger impact on individuals with lower education levels.
+
+Overall, interactions like **Age × Urate** and **Urate × College** suggest that age, education, and poverty interact in complex ways, shaping how unemployment relates to armed status.
+
+### Model Diagnostics
+
+The initial diagnostic plots in Appendix 2 reveal issues with the model fit. The Residuals vs. Fitted plot shows non-random patterns, indicating violations of independence and homoscedasticity. The Q-Q plot highlights deviations from normality, particularly in the tails, which, though less critical for logistic regression, can still impact performance. The Scale-Location plot suggests heteroscedasticity, and Cook’s Distance identifies influential points that may skew results.
+
+After removing observations with high Cook’s Distance and refitting the model, no predictors were significant: age (p = 0.9417), unemployment rate (p = 0.3164), college education (p = 0.4203), and poverty (p = 0.2609). Interaction terms also failed to produce meaningful effects. While residual deviance slightly improved (416.8 on 396 degrees of freedom), overall performance remained unchanged.
+
+### Conclusion
+
+The key takeaway from this analysis is that **age**, **unemployment rate (urate)**, **college education status**, and **poverty levels (pov)** do not significantly predict the likelihood of being armed in this dataset. Despite exploring interaction effects and accounting for potential confounding factors, the logistic regression model yielded no statistically significant results. While the **unemployment rate** showed a positive but inconclusive effect and the **Urate × College** interaction approached significance, these relationships remain weak and require further investigation. Additionally, for the factors associated with racial disparities in police-related incidents in the United States. Counties with **lower relative income** were more likely to have individuals categorized as *Black* rather than *White*. Additionally, counties with a **higher share of college-educated residents** were associated with a lower likelihood of individuals being classified as *Hispanic/Latino*.
+
+This study is not without limitations. The dataset may lack key explanatory variables that capture the broader socioeconomic or contextual factors influencing armed status. Correlation between several economic variables, which may have influenced the observed results. Addressing economic inequalities and exploring additional contextual factors can provide further insights into reducing these disparities. Additionally, the relatively small sample size and presence of influential observations may have limited the model's ability to detect subtle relationships.
+
+Future work in this area can focus on incorporating additional predictors, such as crime rates, regional policies, or mental health indicators, which may provide a more comprehensive understanding of the factors influencing armed status. Expanding the dataset and exploring advanced modeling techniques, such as mixed-effects models or machine learning approaches, could further enhance predictive power and uncover nuanced relationships. Additionally, future research could evaluate the impact of specific policy interventions, such as economic revitalization programs, community policing initiatives, or education-based reforms, to assess their effectiveness in addressing these disparities. Examining temporal trends using longitudinal data would help determine whether racial disparities in police-related incidents are improving, worsening, or remaining stable over time in response to broader social and economic changes. By expanding the scope of this analysis and addressing these limitations, future research can provide a more comprehensive understanding of the systemic factors that contribute to racial disparities in police-related incidents and drivers behind armed status.
+
+## Appendix
+
+### 1. Research Question 2 EDA
 
 ```{r armed-status-plot}
 # Armed Status Distribution
@@ -319,32 +397,6 @@ armed_summary <- data.frame(
 )
 pander(armed_summary, caption  = "Armed Status Distribution")
 ```
-
-#### Relationship Between Armed Status, Age and Unemployment Rate
-
-To take an initial look at the correlation between these three variables, we first plot a simple scatter plot between unemployment rate and age, colored by armed status.
-
-```{r}
-# Scatter plot
-ggplot(cleaned_data, aes(x = age, y = urate, color = armed, shape = armed)) +
-  geom_point(size = 3, alpha = 0.5) +
-  labs(
-    title = "Scatter Plot of Unemployment Rate vs. Age by Armed Status",
-    x = "Age",
-    y = "Unemployment Rate (%)",
-    color = "Armed Status",
-    shape = "Armed Status"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    legend.position = "top",
-    plot.title = element_text(hjust = 0.5)
-  )
-```
-
-The scatter plot shows, firstly most individuals are between 20 and 50 years old, with unemployment rates clustering below 20%. The "Yes" (armed) group is more evenly distributed across ages and slightly concentrated at lower unemployment rates, while the "No" (unarmed) group shows a few more cases of elevated unemployment rates above 20%. Outliers with unemployment rates exceeding 40% appear primarily in the armed group. Overall, no clear trend emerges between age and unemployment rate, and the patterns between armed and unarmed groups are broadly similar.
-
-We further explore the relationship between age and armed status through a box plot, which compares the age distribution for armed and unarmed individuals. The plot illustrates that the age ranges and medians for both groups are remarkably similar, suggesting no significant difference in age distribution between those who are armed and those who are not. This visual evidence supports the regression findings, reinforcing the conclusion that age alone is not a strong determinant of armed status. Nonetheless, the lack of significant variability in the data suggests that other contextual factors beyond age may play a more crucial role in influencing armed status.
 
 ```{r armed-age-plot}
 # Plot 2: Relationship between 'armed' and 'age'
@@ -375,16 +427,7 @@ plot5
 
 ```
 
-In a similar manner, we can take a deeper dive into the relationship between armed status and unemployment rate by plotting a box plot with jittered points for both groups. The visualization demonstrates that the median and interquartile range of unemployment rates are relatively similar for armed and unarmed individuals. However, the presence of outliers, particularly for the armed group, suggests that there may be certain individuals with unusually high unemployment rates. Despite this, the overall spread of the data indicates that unemployment rate, much like age, does not exhibit strong variability across armed status groups. This lack of pronounced difference implies that other contextual factors beyond unemployment rate likely play a more significant role in influencing armed status.
-
-#### Logistic Regression
-
-**Motivation and Model Design**
-
-While the earlier exploratory data analysis (EDA) did not reveal pronounced relationships between **age**, **unemployment rate (urate)**, and **armed status**, a logistic regression model was employed to formally quantify these relationships and test for statistical significance. To account for potential confounding effects, **college education status** and **poverty levels (pov)** were included in the model. These variables are theoretically relevant, as they may influence socioeconomic conditions that impact both unemployment rates and armed status.
-
-The **college** variable represents whether individuals have attained higher education. Lower education levels are often associated with higher unemployment rates, which can indirectly contribute to social or economic stress factors that correlate with armed status. Similarly, **poverty (pov)** measures the proportion of individuals in poverty within a region. Poverty may directly or indirectly influence armed status through economic insecurity, limited access to resources, or broader community-level factors. By including these variables, the model adjusts for their potential confounding effects and ensures that any observed relationships between age, unemployment rate, and armed status are not falsely attributed due to omitted variable bias.
-
+### 2. Research Question 2 Initial Model
 ```{r rq2-model}
 # Logistic regression
 library(car)
@@ -447,34 +490,7 @@ conf_matrix <- confusionMatrix(
 pander(conf_matrix)
 ```
 
-### Key Results
-
-The regression results are summarized below:
-
-::: {.cell tbl-cap="Regression Results"}
-| **Variable** | **Estimate** | **Std. Error** | **z-value** | **p-value** |
-|:--------------|--------------:|--------------:|--------------:|--------------:|
-| **Intercept** | 0.512 | 1.413 | 0.3622 | 0.7172 |
-| **Age of Individuals** | -0.0046 | 0.0284 | -0.1629 | 0.8706 |
-| **Unemployment Rate** | 13.33 | 8.64 | 1.543 | 0.1227 |
-| **College Completion** | 1.166 | 3.198 | 0.3645 | 0.7155 |
-| **Poverty Rate** | 0.0191 | 0.0421 | 0.4531 | 0.6505 |
-| **Age × Unemployment Rate** | -0.1457 | 0.1549 | -0.9409 | 0.3468 |
-| **Unemployment × College** | -30.59 | 17.32 | -1.766 | 0.0774 |
-:::
-
-### Interpretation of Results
-
-The results show that **age** does not significantly predict armed status (p = 0.8706), consistent with earlier findings where age distributions were similar across groups. While the **unemployment rate (urate)** has a positive relationship with armed status (Estimate = 13.33), it is not statistically significant (p = 0.1227), suggesting a possible but inconclusive link.
-
-Both **college education** and **poverty levels (pov)** have weak individual effects (p \> 0.65), but their inclusion helps account for confounding factors. Interestingly, the interaction term **Urate × College** is close to significance (p = 0.0774), hinting that unemployment may have a stronger impact on individuals with lower education levels.
-
-Overall, interactions like **Age × Urate** and **Urate × College** suggest that age, education, and poverty interact in complex ways, shaping how unemployment relates to armed status.
-
-### Model Diagnostics
-
-The diagnostic plots reveal several issues with the current model fit. In the **Residuals vs. Fitted plot**, the residuals display a non-random pattern, suggesting violations of the assumptions of independence and homoscedasticity, indicating that the model may not fully capture the data's underlying structure. The **Normal Q-Q plot** shows deviations from the diagonal line, particularly at the tails, pointing to non-normally distributed residuals. While normality is less critical for logistic regression, extreme deviations can still affect the model's performance. Additionally, the **Scale-Location plot** highlights an uneven spread of residuals, reinforcing the presence of heteroscedasticity. Finally, **Cook's Distance** highlights influential points that may skew the model's results, making it necessary to address them for improved reliability.
-
+### 3. Research Question 2 Refitted Model
 ```{r}
 # Cook's Distance threshold
 cooks_threshold <- 4 / nrow(cleaned_data)
@@ -535,20 +551,3 @@ text(
 
 ```
 
-The initial diagnostic plots showed some issues with our model, like non-random residual patterns and influential points flagged by Cook's Distance. To fix this, we removed observations with Cook's Distance values above the threshold ($( 4/n )$) and refitted the logistic regression model using the cleaned data.
-
-After refitting, the results still didn’t show any significant predictors. **Age** (p = 0.9417), **unemployment rate (urate)** (p = 0.3164), **college education** (p = 0.4203), and **poverty (pov)** (p = 0.2609) all remained insignificant. Even the interaction terms, like **age:urate** and **urate:college**, didn’t produce meaningful effects. Although the residual deviance improved slightly (416.8 on 396 degrees of freedom), the overall model performance didn’t change much.
-
-In summary, removing outliers didn’t uncover any strong relationships between these predictors and armed status. It seems these variables, on their own or combined, don’t explain much in this dataset. Exploring other variables or alternative modeling approaches might give us better insights.
-
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \[TODO: Comment on the model fit etc., talk about the model assumptions, and try refitting the model after excluding outliers based on cook's distance Logic: 1. We see that the variables are not significant -\> comment on that 2. However, we also see that several model assumptions might have been violated based on the diagnostic plot 3. Refit the model 4. -\> if results are significant, write an interpretation saying that we found significant correlation -\> else: write how the results are still not significant, and there's no significant correlation between the variables etc.\]
-
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-### Conclusion (only includes research Q2 conclusion, content may need to be edited to reduce word limit after adding Research Q1 conclusion)
-
-The key takeaway from this analysis is that **age**, **unemployment rate (urate)**, **college education status**, and **poverty levels (pov)** do not significantly predict the likelihood of being armed in this dataset. Despite exploring interaction effects and accounting for potential confounding factors, the logistic regression model yielded no statistically significant results. While the **unemployment rate** showed a positive but inconclusive effect and the **Urate × College** interaction approached significance, these relationships remain weak and require further investigation. Additionally, for the factors associated with racial disparities in police-related incidents in the United States. Counties with **lower relative income** were more likely to have individuals categorized as *Black* rather than *White*. Additionally, counties with a **higher share of college-educated residents** were associated with a lower likelihood of individuals being classified as *Hispanic/Latino*.
-
-This study is not without limitations. The dataset may lack key explanatory variables that capture the broader socioeconomic or contextual factors influencing armed status. Correlation between several economic variables, which may have influenced the observed results. Addressing economic inequalities and exploring additional contextual factors can provide further insights into reducing these disparities. Additionally, the relatively small sample size and presence of influential observations may have limited the model's ability to detect subtle relationships.
-
-Future work in this area can focus on incorporating additional predictors, such as crime rates, regional policies, or mental health indicators, which may provide a more comprehensive understanding of the factors influencing armed status. Expanding the dataset and exploring advanced modeling techniques, such as mixed-effects models or machine learning approaches, could further enhance predictive power and uncover nuanced relationships. Additionally, future research could evaluate the impact of specific policy interventions, such as economic revitalization programs, community policing initiatives, or education-based reforms, to assess their effectiveness in addressing these disparities. Examining temporal trends using longitudinal data would help determine whether racial disparities in police-related incidents are improving, worsening, or remaining stable over time in response to broader social and economic changes. By expanding the scope of this analysis and addressing these limitations, future research can provide a more comprehensive understanding of the systemic factors that contribute to racial disparities in police-related incidents and drivers behind armed status.
