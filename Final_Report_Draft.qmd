@@ -1,6 +1,6 @@
 ---
 title: "IDS 702 Final Report: Analysis of Police-Related Incidents: Economic and Demographic Influences"
-author: "Afag, Peter, Elenor, Mobasser"
+author: "Afag, Peter, Eleanor, Mobasser"
 date: "`r Sys.Date()`"
 format: pdf
 editor: visual
@@ -27,7 +27,7 @@ This report investigates two key research questions about police-related inciden
 
 Police-related incidents have become a focal point of public safety research and policy discussions in recent years. The complex interplay between socioeconomic factors, racial dynamics, and law enforcement practices has sparked intense debate and calls for reform across the United States. Understanding the underlying patterns and potential contributing factors to these incidents is crucial for developing effective strategies to enhance community safety and promote equitable policing practices.
 
-Research has shown that economic conditions and racial demographics can significantly influence crime rates and police-community interactions. Studies have found that neighborhoods with higher concentrations of low-income residents and residents of color tend to experience higher rates of police-related deaths[1]. Additionally, unemployment and economic stress have been associated with increased rates of certain types of crime, potentially affecting police encounters[4]. However, the relationship between economic factors and crime is complex, with some research suggesting that economic downturns may actually decrease criminal opportunities in certain contexts[3].
+Research has shown that economic conditions and racial demographics can significantly influence crime rates and police-community interactions. Studies have found that neighborhoods with higher concentrations of low-income residents and residents of color tend to experience higher rates of police-related deaths. Additionally, unemployment and economic stress have been associated with increased rates of certain types of crime, potentially affecting police encounters. However, the relationship between economic factors and crime is complex, with some research suggesting that economic downturns may actually decrease criminal opportunities in certain contexts.
 
 This report aims to contribute to this body of knowledge by examining two key research questions:
 
@@ -114,21 +114,83 @@ Model diagnostics included checks for multicollinearity using Variance Inflation
 ## Results
 
 ### Exploratory Data Analysis
-
-```{r eda}
-# Summary of racial composition
-race_summary <- cleaned_data %>%
-  count(raceethnicity) %>%
-  mutate(prop = n / sum(n)) 
-  kable(race_summary, caption = "Race Ethinicity Summary Statistics")
-
-# Summary of economic conditions
-pander(summary(cleaned_data %>% select(comp_income, pov)))
-
-# Distribution of age and unemployment rate
+```{r eda1}
+par(mar = c(4, 4, 2, 2)) # Reduce margins
+par(mfrow = c(2, 1))
 hist(cleaned_data$age, breaks = 20, main = "Age Distribution", xlab = "Age")
 hist(cleaned_data$urate, breaks = 20, main = "Unemployment Rate Distribution", xlab = "Unemployment Rate")
 ```
+
+The demographic analysis shows that the deceased had a mean age in their 30s, with the age range extending to over 80. The unemployment rate in their residential tracts averaged 10%, reaching a maximum of 51%. The gender distribution was heavily skewed, with 428 males and 20 females.
+
+```{r race-summary}
+race_summary <- cleaned_data %>% count(raceethnicity) %>% mutate(Percentage = round(n / sum(n) *100,2)) 
+kable(race_summary, caption = "Race Ethinicity Summary Statistics")
+```
+
+```{r eda2}
+rq1_data <- cleaned_data %>% filter(raceethnicity %in% c("Black", "White", "Hispanic/Latino"))
+
+library(reshape2)
+library(ggplot2)
+library(viridis)
+
+# options(repr.plot.width = 5, repr.plot.height = 1) 
+ggplot(rq1_data, aes(x = comp_income, y = raceethnicity, fill = raceethnicity)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_fill_viridis(discrete = TRUE) +
+  labs(title = "Economic Conditions and Racial Composition",
+       x = "Relative Income",
+       y = "Race/Ethnicity") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    legend.position = "none"
+  ) +
+  coord_flip()
+
+# Create correlation matrix
+cor_matrix <- cor(rq1_data[, c("comp_income", "pov", "nat_bucket", "county_bucket", "p_income", "urate")], use = "complete.obs")
+
+# Melt the correlation matrix
+cor_melted <- melt(cor_matrix)
+
+name_mapping <- c(
+  "comp_income" = "Relative Income",
+  "pov" = "Poverty Rate",
+  "nat_bucket" = "National Income Tier",
+  "county_bucket" = "County Income Tier",
+  "p_income" = "Personal Income Tier",
+  "urate" = "Unemployment Rate"
+)
+
+library(scales)
+# options(repr.plot.width = 5, repr.plot.height =4) 
+# Create correlation plot with viridis colors
+ggplot(cor_melted, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_viridis(option = "viridis", limits = c(-1, 1)) +
+  geom_text(aes(label = round(value, 2)), 
+            color = ifelse(abs(cor_melted$value) > 0.5, "white", "black"), 
+            size = 4) +
+  labs(title = "Correlation Plot of Economic Related Indicators",
+       x = "", y = "") +
+  scale_x_discrete(labels = \(x) label_wrap(10)(name_mapping[x])) +
+  scale_y_discrete(labels = \(x) label_wrap(10)(name_mapping[x])) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.text = element_text(size =7),
+   # axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major = element_blank(),
+    panel.border = element_blank()
+  )
+```
+
+Due to sample size limitations, the racial composition analysis was restricted to three main groups: White (52%), Black, and Hispanic/Latino, with Asian and Native American groups (each <5%) with less than 30 people being excluded from the analysis. For our **research question 1**, it is clear that a multinomial logistic regression is proficient in this case. The box plot reveals distinct income disparities across racial groups, suggesting relative income as a potentially significant predictor. Analysis of economic indicators showed high correlations among most variables, with tract-level unemployment rate being the exception. Based on this correlation analysis, we selected unemployment rate and one additional economic indicator for the final model.
+
 
 ### Research Question 1: Economic Conditions and Racial Composition
 
@@ -260,26 +322,14 @@ combined_table$Significance <- ifelse(
          ifelse(combined_table$p.values < 0.05, "*", ""))
 )
 
-kable(combined_table, caption = "Combined Table: Coefficients, Std.Errors, Odds Ratios, Confidence Intervals, and p-values")
+kable(combined_table, caption = "Combined Table: Coefficients, Std.Errors, Odds Ratios, Confidence Intervals, and p-values",
+      col.names = c("Variable", "Coef.", "SE", "OR", "CI Low", "CI Up", "p-val", "Sig."),
+      align = c('l', rep('r', 7)),  # Left align text, right align numbers
+      format = "latex",
+      booktabs = TRUE)
 
 ```
 
-#### Distribution of Race
-
-```{r race-summary}
-race_summary <- cleaned_data %>% count(raceethnicity) %>% mutate(Percentage = round(n / sum(n) *100,2)) 
-kable(race_summary, caption = "Race Ethinicity Summary Statistics")
-```
-
-#### Economic Conditions and Racial Composition
-
-This chart shows a negative relationship between relative income and poverty rate, where higher relative income is associated with lower poverty rates. Different racial groups cluster differently, with Black individuals appearing more concentrated in areas with lower income and higher poverty rates, highlighting potential economic disparities. The spread of other racial groups, such as Hispanic/Latino and Native American individuals, also suggests variability but less pronounced patterns. This visualization supports the idea that economic conditions are unequally distributed across racial groups.
-
-```{r comp-pov-plot}
-ggplot(cleaned_data, aes(x = comp_income, y = pov, color = raceethnicity)) +
-  geom_point() +
-  labs(title = "Economic Conditions and Racial Composition", x = "Relative Income", y = "Poverty Rate")
-```
 
 ### Research Question 2: Likelihood of Being Armed
 
