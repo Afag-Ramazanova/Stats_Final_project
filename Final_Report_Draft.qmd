@@ -69,15 +69,11 @@ glimpse(cleaned_data)
 
 ### Data
 
-We used the "police_killings.csv" dataset, which includes variables such as age, racial composition, economic indicators, and whether the individual was armed. Data cleaning involved: - Filtering out missing values for relevant variables (removed `r nrow(data) - nrow(cleaned_data)` rows). - Converting "armed" into a binary factor (armed vs. unarmed) and racial categories into nominal factors. - Ensuring numeric data types for continuous variables like age, `urate`, `comp_income`, and `pov`.
-
-**Edit**:
-
 The dataset consists of **467 observations** and **34 columns**, providing detailed information on police-related incidents across different counties in the United States. The dataset includes variables that capture demographic information (e.g., race, gender, age), geographic details (e.g., city, state, latitude, longitude), economic indicators (e.g., household income, poverty rate, unemployment rate), and other socioeconomic factors. The primary outcome variable, `raceethnicity`, categorizes individuals involved in police-related incidents into racial groups, including "White," "Black," "Hispanic/Latino," "Asian/Pacific Islander," and "Native American." For this analysis, categories with very low representation, such as "Asian/Pacific Islander" and "Native American," were excluded to ensure model reliability.
 
-Key economic variables include: Tract-level median household income as a share of county-level median household income (will be refered as a relative income), poverty rate at the county level, unemployment rate at the county level, the proportion of the population with a Bachelor's degree or higher. The dataset also contains demographic proportions, such as `share_white`, `share_black`, and `share_hispanic`, representing the racial composition within the county.
+Key economic variables include: Tract-level median household income as a share of county-level median household income (will be refered as a relative income), poverty rate at the county level, unemployment rate at the county level, the proportion of the population with a Bachelor's degree or higher.
 
-To prepare the data for analysis, entries with missing values were excluded. Since the number of missing values was minimal (approximately 2 or 3 for some variables), these rows were dropped without significantly affecting the overall dataset size or quality. Additionally, the outcome variable was structured to focus on three primary racial groups: "White," "Black," and "Hispanic/Latino," with "White" designated as the reference category. This decision was made due to the disproportionately low representation of individuals categorized as "Asian/Pacific Islander" and "Native American," which would have hindered the reliability of the multinomial logistic regression analysis.
+To prepare the data for analysis, entries with missing values were excluded. Since the number of missing values was minimal (approximately 2 or 3 for some variables), these rows were dropped without significantly affecting the overall dataset size or quality.
 
 ### Model fitting and evaluation
 
@@ -86,31 +82,6 @@ For Research Question 1, which examines the relationship between economic condit
 For Research Question 2, a logistic regression model was employed to analyze the binary outcome variable, armed (armed status of the individual). The independent variables include age, urate (unemployment rate), gender, race/ethnicity, and college level which serve as proxies for demographic and socioeconomic factors. All interaction terms between these variables are also included to adjust for possible multicollinearity between the variable.
 
 Both models were supported by diagnostic evaluations to ensure reliability. Correlation matrix and Variance Inflation Factor (VIF) was used to check for multicollinearity and correlation, and Cook’s distance assessed the influence of individual data points. Classification performance was further evaluated using a confusion matrix, accuracy, precision, recall, and F1 scores, providing a detailed breakdown of the model's predictive capabilities for each category. The area under the Receiver Operating Characteristic (ROC) curve (AUC) was used as an additional metric to assess the model's ability to distinguish between categories. Residual diagnostics, including residual vs. fitted plots, were used to evaluate linearity and homoscedasticity. These diagnostic evaluations and performance metrics ensure that the models are well-suited to address the research questions, effectively capturing the underlying dynamics in the data. All statistical analyses were conducted using R programming language
-
-\[## Need to remove these as per feedback from Andrea, I couldn't figure out how to include these below in above content\]
-
-#### Research Question 1: Economic Conditions and Racial Composition
-
--   **Outcome Variable**: `raceethnicity` (Nominal) – categorizes the racial/ethnic group of the deceased.
--   **Independent Variables**:
-    -   `comp_income`: A measure of relative income (household income divided by county income), indicating economic status.
-    -   `pov`: Poverty level in the area, providing additional context on socio-economic conditions.
-
-A multinomial logistic regression model was fitted to examine the association:
-
--   `raceethnicity ~ comp_income + pov`
-
-#### Research Question 2: Likelihood of Being Armed
-
--   **Outcome Variable**: `armed` (Binary) – indicates whether the deceased was armed at the time of the incident.
--   **Independent Variables**:
-    -   `age`: Age of the deceased (continuous variable).
-    -   `urate`: Unemployment rate in the area, representing socio-economic stress.
--   **Interaction Term**: An interaction between `age` and `urate` to assess their combined influence on the likelihood of individuals being armed.
-
-A logistic regression model was fitted:
-
--   `armed ~ age + urate + age:urate`
 
 ### Model Assessment
 
@@ -134,7 +105,9 @@ race_summary <- cleaned_data %>% count(raceethnicity) %>% mutate(Percentage = ro
 kable(race_summary, caption = "Race Ethinicity Summary Statistics")
 ```
 
-```{r eda2}
+Due to sample size limitations, the racial composition analysis was restricted to three main groups: White (52%), Black, and Hispanic/Latino, with Asian and Native American groups (each \<5%) with less than 30 people being excluded from the analysis.
+
+```{r}
 rq1_data <- cleaned_data %>% filter(raceethnicity %in% c("Black", "White", "Hispanic/Latino"))
 
 library(reshape2)
@@ -145,9 +118,9 @@ library(viridis)
 ggplot(rq1_data, aes(x = comp_income, y = raceethnicity, fill = raceethnicity)) +
   geom_boxplot(alpha = 0.7) +
   scale_fill_viridis(discrete = TRUE) +
-  labs(title = "Economic Conditions and Racial Composition",
-       x = "Relative Income",
-       y = "Race/Ethnicity") +
+  labs(title = "Economic Condition and Racial Composition",
+       x = "Relative Income Ratio",
+       y = "Race - Ethnicity") +
   theme_minimal() +
   theme(
     plot.title = element_text(size = 14, face = "bold"),
@@ -156,6 +129,12 @@ ggplot(rq1_data, aes(x = comp_income, y = raceethnicity, fill = raceethnicity)) 
     legend.position = "none"
   ) +
   coord_flip()
+
+```
+
+For our **research question 1**, it is clear that a multinomial logistic regression is proficient in this case. The box plot reveals distinct income disparities across racial groups, suggesting relative income as a potentially significant predictor.
+
+```{r eda2}
 
 # Create correlation matrix
 cor_matrix <- cor(rq1_data[, c("comp_income", "pov", "nat_bucket", "county_bucket", "p_income", "urate")], use = "complete.obs")
@@ -171,7 +150,7 @@ name_mapping <- c(
   "p_income" = "Personal Income Tier",
   "urate" = "Unemployment Rate"
 )
-
+# install.packages('viridis')
 library(scales)
 # options(repr.plot.width = 5, repr.plot.height =4) 
 # Create correlation plot with viridis colors
@@ -195,21 +174,19 @@ ggplot(cor_melted, aes(x = Var1, y = Var2, fill = value)) +
   )
 ```
 
-Due to sample size limitations, the racial composition analysis was restricted to three main groups: White (52%), Black, and Hispanic/Latino, with Asian and Native American groups (each \<5%) with less than 30 people being excluded from the analysis. For our **research question 1**, it is clear that a multinomial logistic regression is proficient in this case. The box plot reveals distinct income disparities across racial groups, suggesting relative income as a potentially significant predictor. Analysis of economic indicators showed high correlations among most variables, with tract-level unemployment rate being the exception. Based on this correlation analysis, we selected unemployment rate and one additional economic indicator for the final model.
+Analysis of economic indicators showed high correlations among most variables, with tract-level unemployment rate being the exception. Based on this correlation analysis, we selected unemployment rate and one additional economic indicator for the final model.
 
 ### Research Question 1: Economic Conditions and Racial Composition
 
-The results of the final multinomial logistic regression model are summarized in the table below. The predictors included in the model were chosen based on their relevance to the research question.
+The results of the multinomial logistic regression model indicate that specific economic conditions are significantly associated with the racial composition of individuals involved in police-related incidents. Counties with **lower relative income** were significantly more likely to have individuals categorized as *Black* rather than *White*, suggesting that economic disadvantage disproportionately impacts Black individuals. Additionally, counties with **higher unemployment rates** showed a strong association with the likelihood of individuals being classified as *Black*, emphasizing the role of joblessness in shaping these disparities.
 
-The findings reveal important relationships between economic conditions and racial classifications in police-related incidents. Counties with lower **relative income** (a measure of household income as a share of the county median) were more likely to see individuals involved in these incidents categorized as "Black" rather than "White." Similarly, counties with higher **unemployment rates** were associated with an increased likelihood of individuals being classified as "Black" compared to "White." These findings highlight the disproportionate impact of economic inequality and joblessness on Black individuals in the context of police-related incidents.
+For *Hispanic/Latino* individuals, economic predictors such as relative income and poverty rate did not show statistically significant relationships. However, these findings highlight the complexity of factors influencing racial composition in police-related incidents and suggest that the effects of economic conditions may vary across racial groups.
 
-For "Hispanic/Latino" individuals, the relationships with economic variables were less consistent. For example, relative income showed no significant relationship with the likelihood of individuals being classified as "Hispanic/Latino" versus "White." However, counties with slightly higher **poverty rates** were marginally more likely to have individuals categorized as "Hispanic/Latino" rather than "White," though the effect was small. Counties with a higher proportion of **college-educated residents** were associated with a reduced likelihood of individuals being classified as "Hispanic/Latino" compared to "White," suggesting the potential role of education in shaping these patterns.
-
-The confidence intervals provide a range of values within which the true effects of these factors are likely to fall, and they support the reliability of these findings. Additionally, odds ratios greater than 1 suggest an increase in likelihood, while those less than 1 suggest a decrease. For instance, the odds of being classified as Black increase significantly with higher unemployment, whereas the odds decrease with higher relative income. These conclusions are further supported by the low p-values observed for several predictors in the model, indicating that these relationships are statistically significant.
+The confidence intervals provide a range of values within which the true effects of these factors are likely to fall, and they support the reliability of these findings. Additionally, odds ratios greater than 1 suggest an increase in likelihood, while those less than 1 suggest a decrease. For instance, the odds of being classified as Black increase significantly with higher unemployment, whereas the odds decrease with higher relative income. These conclusions are further supported by the low p-values observed for several predictors in the model, indicating that these relationships are statistically significant. One special note: the unusually large confidence interval for unemployment rate suggests a high degree of uncertainty in the estimate. This may be due to sparse data for counties with very high unemployment, the influence of outliers, or multicollinearity with other predictors. While the effect remains significant, the wide confidence interval warrants caution in interpreting its precise impact. Future research should address this by examining extreme values or transforming the variable to stabilize the estimates.
 
 Overall, these results demonstrate how structural factors like economic inequality and unemployment disproportionately impact certain racial groups in police-related incidents. By identifying these relationships, policymakers and researchers can better understand and address the systemic factors contributing to these disparities.
 
-```{r corr}
+```{r corr, include=FALSE}
 cols_to_numeric <- c(
                      "p_income", "h_income", "comp_income", "county_income", 
                      "urate", "college", "pov")
@@ -217,7 +194,7 @@ cor_matrix <- cor(cleaned_data[cols_to_numeric])
 print(cor_matrix)
 ```
 
-```{r Excluding the  2 groups}
+```{r Excluding the  2 groups, include=FALSE}
 cleaned_data <- cleaned_data[!(cleaned_data$raceethnicity %in% c("Asian/Pacific Islander", "Native American")), ]
 cleaned_data$raceethnicity <- factor(cleaned_data$raceethnicity)
 cleaned_data$raceethnicity <- relevel(cleaned_data$raceethnicity, ref = "White")
@@ -240,17 +217,13 @@ confusionMatrix(predict(rq1_model2), cleaned_data$raceethnicity, mode="everythin
 
 ```
 
-Accuracy of model is still: 58.29
-
-Results:
-
 ```{r intercept 2}
 intercept_tablee <- as.data.frame(cbind(
   Coefficients = summary(rq1_model2)$coefficients[, "(Intercept)"],
   Std.Errors = summary(rq1_model2)$standard.errors[, "(Intercept)"],
   p.values = 2 * (1 - pnorm(abs(summary(rq1_model2)$coefficients[, "(Intercept)"] /summary(rq1_model2)$standard.errors[, "(Intercept)"])))))
 intercept_tablee$Variable <- "Intercept"
-intercept_tablee
+
 ```
 
 ```{r income 2}
@@ -285,12 +258,6 @@ college_tablee <- as.data.frame(cbind(
   Std.Errors = summary(rq1_model2)$standard.errors[, "college"],
   p.values = 2 * (1 - pnorm(abs(summary(rq1_model2)$coefficients[, "college"] /summary(rq1_model2)$standard.errors[, "college"])))))
 college_tablee$Variable <- "Higher Education Share"
-
-```
-
-```{r}
-exp(confint(rq1_model2))
-
 
 ```
 
@@ -485,15 +452,15 @@ pander(conf_matrix)
 The regression results are summarized below:
 
 ::: {.cell tbl-cap="Regression Results"}
-| **Variable**                | **Estimate** | **Std. Error** | **z-value** | **p-value** |
-|:---------------|-------------:|-------------:|-------------:|-------------:|
-| **Intercept**               |        0.512 |          1.413 |      0.3622 |      0.7172 |
-| **Age of Individuals**      |      -0.0046 |         0.0284 |     -0.1629 |      0.8706 |
-| **Unemployment Rate**       |        13.33 |           8.64 |       1.543 |      0.1227 |
-| **College Completion**      |        1.166 |          3.198 |      0.3645 |      0.7155 |
-| **Poverty Rate**            |       0.0191 |         0.0421 |      0.4531 |      0.6505 |
-| **Age × Unemployment Rate** |      -0.1457 |         0.1549 |     -0.9409 |      0.3468 |
-| **Unemployment × College**  |       -30.59 |          17.32 |      -1.766 |      0.0774 |
+| **Variable** | **Estimate** | **Std. Error** | **z-value** | **p-value** |
+|:--------------|--------------:|--------------:|--------------:|--------------:|
+| **Intercept** | 0.512 | 1.413 | 0.3622 | 0.7172 |
+| **Age of Individuals** | -0.0046 | 0.0284 | -0.1629 | 0.8706 |
+| **Unemployment Rate** | 13.33 | 8.64 | 1.543 | 0.1227 |
+| **College Completion** | 1.166 | 3.198 | 0.3645 | 0.7155 |
+| **Poverty Rate** | 0.0191 | 0.0421 | 0.4531 | 0.6505 |
+| **Age × Unemployment Rate** | -0.1457 | 0.1549 | -0.9409 | 0.3468 |
+| **Unemployment × College** | -30.59 | 17.32 | -1.766 | 0.0774 |
 :::
 
 ### Interpretation of Results
@@ -580,8 +547,8 @@ In summary, removing outliers didn’t uncover any strong relationships between 
 
 ### Conclusion (only includes research Q2 conclusion, content may need to be edited to reduce word limit after adding Research Q1 conclusion)
 
-The key takeaway from this analysis is that **age**, **unemployment rate (urate)**, **college education status**, and **poverty levels (pov)** do not significantly predict the likelihood of being armed in this dataset. Despite exploring interaction effects and accounting for potential confounding factors, the logistic regression model yielded no statistically significant results. While the **unemployment rate** showed a positive but inconclusive effect and the **Urate × College** interaction approached significance, these relationships remain weak and require further investigation.
+The key takeaway from this analysis is that **age**, **unemployment rate (urate)**, **college education status**, and **poverty levels (pov)** do not significantly predict the likelihood of being armed in this dataset. Despite exploring interaction effects and accounting for potential confounding factors, the logistic regression model yielded no statistically significant results. While the **unemployment rate** showed a positive but inconclusive effect and the **Urate × College** interaction approached significance, these relationships remain weak and require further investigation. Additionally, for the factors associated with racial disparities in police-related incidents in the United States. Counties with **lower relative income** were more likely to have individuals categorized as *Black* rather than *White*. Additionally, counties with a **higher share of college-educated residents** were associated with a lower likelihood of individuals being classified as *Hispanic/Latino*.
 
-This study is not without limitations. The dataset may lack key explanatory variables that capture the broader socioeconomic or contextual factors influencing armed status. Additionally, the relatively small sample size and presence of influential observations may have limited the model's ability to detect subtle relationships.
+This study is not without limitations. The dataset may lack key explanatory variables that capture the broader socioeconomic or contextual factors influencing armed status. Correlation between several economic variables, which may have influenced the observed results. Addressing economic inequalities and exploring additional contextual factors can provide further insights into reducing these disparities. Additionally, the relatively small sample size and presence of influential observations may have limited the model's ability to detect subtle relationships.
 
-Future work in this area can focus on incorporating additional predictors, such as crime rates, regional policies, or mental health indicators, which may provide a more comprehensive understanding of the factors influencing armed status. Expanding the dataset and exploring advanced modeling techniques, such as mixed-effects models or machine learning approaches, could further enhance predictive power and uncover nuanced relationships. By addressing these limitations, future research can build a more complete picture of the social and economic drivers behind armed status.
+Future work in this area can focus on incorporating additional predictors, such as crime rates, regional policies, or mental health indicators, which may provide a more comprehensive understanding of the factors influencing armed status. Expanding the dataset and exploring advanced modeling techniques, such as mixed-effects models or machine learning approaches, could further enhance predictive power and uncover nuanced relationships. Additionally, future research could evaluate the impact of specific policy interventions, such as economic revitalization programs, community policing initiatives, or education-based reforms, to assess their effectiveness in addressing these disparities. Examining temporal trends using longitudinal data would help determine whether racial disparities in police-related incidents are improving, worsening, or remaining stable over time in response to broader social and economic changes. By expanding the scope of this analysis and addressing these limitations, future research can provide a more comprehensive understanding of the systemic factors that contribute to racial disparities in police-related incidents and drivers behind armed status.
